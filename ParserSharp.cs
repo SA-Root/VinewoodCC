@@ -15,8 +15,8 @@ namespace ParserSharp
     public class Parser
     {
         public string OutputFile { get; set; }
-        public List<ScannerTokens> Tokens { get; set; }
-        public int TokenIndex { get; set; }
+        private List<ScannerTokens> Tokens { get; set; }
+        private int TokenIndex { get; set; }
         private ASTNode Root { get; set; }
         private int LoadTokens(string path)
         {
