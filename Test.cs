@@ -4,7 +4,7 @@ using BenchmarkDotNet.Engines;
 
 namespace VinewoodCC
 {
-    [SimpleJob(RunStrategy.ColdStart, targetCount: 5)]
+    [SimpleJob(RunStrategy.ColdStart, launchCount: 5)]
     public class Test
     {
         [Benchmark]
