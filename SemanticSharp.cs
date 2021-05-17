@@ -29,7 +29,7 @@ namespace VinewoodCC
         }
         private void SemanticCheck()
         {
-            Root.AOTCheck(null);
+            Root.AOTCheck(null, null);
         }
         public void run(string arg)
         {

@@ -24,7 +24,7 @@ namespace VinewoodCC
         {
             Type = type;
         }
-        public virtual int AOTCheck(Dictionary<string, STItem> GST)
+        public virtual int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -43,10 +43,13 @@ namespace VinewoodCC
         {
             Items = items;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             GlobalSymbolTable = new Dictionary<string, STItem>();
-            
+            foreach (var i in Items)
+            {
+                i.AOTCheck(GlobalSymbolTable, null);
+            }
             return 0;
         }
     }
@@ -92,6 +95,8 @@ namespace VinewoodCC
         public ASTDeclarator Declarator { get; set; }
         [JsonProperty(Order = 4, PropertyName = "body")]
         public ASTCompoundStatement Body { get; set; }
+        [JsonIgnore]
+        public Dictionary<string, STItem> LocalSymbolTable { get; set; }
         public ASTFunctionDefine() : base("FunctionDefine")
         {
             Specifiers = new List<ASTToken>();
@@ -102,8 +107,10 @@ namespace VinewoodCC
             Declarator = declarator;
             Body = bodyStatement;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
+            LocalSymbolTable = new Dictionary<string, STItem>();
+
             return 0;
         }
     }
@@ -123,7 +130,7 @@ namespace VinewoodCC
             Specifiers = specList;
             InitLists = initList;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -143,7 +150,7 @@ namespace VinewoodCC
             Value = value;
             TokenID = tid;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -163,7 +170,7 @@ namespace VinewoodCC
             Specfiers = specList;
             Declarator = declarator;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -194,7 +201,7 @@ namespace VinewoodCC
             Specfiers = specList;
             Declarator = declarator;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -214,7 +221,7 @@ namespace VinewoodCC
             Declarator = d;
             Expressions = e;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -234,7 +241,7 @@ namespace VinewoodCC
             Value = value;
             TokenID = tid;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -254,7 +261,7 @@ namespace VinewoodCC
             ArrayName = arrayname;
             Elements = elements;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -277,7 +284,7 @@ namespace VinewoodCC
             Expr1 = e1;
             Expr2 = e2;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -297,7 +304,7 @@ namespace VinewoodCC
             Value = value;
             TokenID = tid;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -317,7 +324,7 @@ namespace VinewoodCC
             Value = value;
             TokenID = tid;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -337,7 +344,7 @@ namespace VinewoodCC
             FunctionName = name;
             ArgList = args;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -357,7 +364,7 @@ namespace VinewoodCC
             Value = value;
             TokenID = tid;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -377,7 +384,7 @@ namespace VinewoodCC
             Expression = expr;
             Operator = op;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -397,7 +404,7 @@ namespace VinewoodCC
             Value = value;
             TokenID = tid;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -417,7 +424,7 @@ namespace VinewoodCC
             Expression = expr;
             Operator = op;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -428,7 +435,7 @@ namespace VinewoodCC
         {
 
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -445,7 +452,7 @@ namespace VinewoodCC
         {
             BlockItems = items;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -456,7 +463,7 @@ namespace VinewoodCC
         {
 
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -473,7 +480,7 @@ namespace VinewoodCC
         {
             Expressions = exprs;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -502,7 +509,7 @@ namespace VinewoodCC
             Step = step;
             Stat = stat;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -531,7 +538,7 @@ namespace VinewoodCC
             Step = step;
             Stat = stat;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -548,7 +555,7 @@ namespace VinewoodCC
         {
             Expression = expr;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -573,7 +580,7 @@ namespace VinewoodCC
             Then = then;
             Otherwise = otherwise;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -593,7 +600,7 @@ namespace VinewoodCC
             Declarator = declarator;
             Expression = expressions;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -610,7 +617,7 @@ namespace VinewoodCC
         {
             Identifier = declarator;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
@@ -631,7 +638,7 @@ namespace VinewoodCC
             Declarator = declarator;
             Parameters = paramsDecl;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             return 0;
         }
