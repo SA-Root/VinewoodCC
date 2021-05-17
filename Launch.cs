@@ -14,8 +14,8 @@ namespace VinewoodCC
         }
         public static void Main(string[] args)
         {
-            //run(args[0]);
-            _ = BenchmarkRunner.Run<Test>();
+            run(args[0]);
+            //_ = BenchmarkRunner.Run<Test>();
         }
     }
 }
