@@ -1,5 +1,10 @@
 using System;
 
+namespace VinewoodCC
+{
+    
+}
+
 namespace ParserSharp
 {
     class UnsupportedSyntaticException : Exception

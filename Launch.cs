@@ -1,5 +1,6 @@
 ﻿using System;
 using BenchmarkDotNet.Running;
+using System.Collections.Generic;
 
 namespace VinewoodCC
 {
@@ -7,10 +8,13 @@ namespace VinewoodCC
     {
         static void run(string path)
         {
-            var LS = new LexSharp.Program();
-            LS.Run(path);
-            var PS = new ParserSharp.Parser();
-            PS.Run(LS.OutputFile);
+            // var LS = new LexSharp.Program();
+            // LS.Run(path);
+            // var PS = new ParserSharp.Parser();
+            // PS.Run(LS.OutputFile);
+            var SC = new Semantica();
+            //SC.run(PS.OutputFile);
+            SC.run(path);
         }
         public static void Main(string[] args)
         {

@@ -16,7 +16,7 @@ namespace ParserSharp
     [JsonSubtypes.KnownSubType(typeof(ASTDeclarator), "Declarator")]
     [JsonSubtypes.KnownSubType(typeof(ASTParamsDeclarator), "ParamsDeclarator")]
     [JsonSubtypes.KnownSubType(typeof(ASTInitList), "InitList")]
-    class ASTNode
+    public class ASTNode
     {
         [JsonProperty(Order = 1, PropertyName = "type")]
         public string Type { get; set; }
@@ -25,7 +25,7 @@ namespace ParserSharp
             Type = type;
         }
     }
-    class ASTCompilationUnit : ASTNode
+    public class ASTCompilationUnit : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "items")]
         public List<ASTNode> Items { get; set; }
@@ -49,7 +49,7 @@ namespace ParserSharp
     [JsonSubtypes.KnownSubType(typeof(ASTPostfixExpression), "PostfixExpression")]
     [JsonSubtypes.KnownSubType(typeof(ASTStringConstant), "StringConstant")]
     [JsonSubtypes.KnownSubType(typeof(ASTUnaryExpression), "UnaryExpression")]
-    abstract class ASTExpression : ASTNode
+    abstract public class ASTExpression : ASTNode
     {
         public ASTExpression(string type) : base(type)
         {
@@ -65,14 +65,14 @@ namespace ParserSharp
     [JsonSubtypes.KnownSubType(typeof(ASTIterationStatement), "IterationStatement")]
     [JsonSubtypes.KnownSubType(typeof(ASTReturnStatement), "ReturnStatement")]
     [JsonSubtypes.KnownSubType(typeof(ASTSelectionStatement), "SelectionStatement")]
-    abstract class ASTStatement : ASTNode
+    abstract public class ASTStatement : ASTNode
     {
         public ASTStatement(string type) : base(type)
         {
 
         }
     }
-    class ASTFunctionDefine : ASTNode
+    public class ASTFunctionDefine : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "specifiers")]
         public List<ASTToken> Specifiers { get; set; }
@@ -91,7 +91,7 @@ namespace ParserSharp
             Body = bodyStatement;
         }
     }
-    class ASTDeclaration : ASTNode
+    public class ASTDeclaration : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "specifiers")]
         public List<ASTToken> Specifiers { get; set; }
@@ -108,7 +108,7 @@ namespace ParserSharp
             InitLists = initList;
         }
     }
-    class ASTToken : ASTNode
+    public class ASTToken : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public string Value { get; set; }
@@ -124,7 +124,7 @@ namespace ParserSharp
             TokenID = tid;
         }
     }
-    class ASTTypename : ASTNode
+    public class ASTTypename : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "specfiers")]
         public List<ASTToken> Specfiers { get; set; }
@@ -144,14 +144,14 @@ namespace ParserSharp
     [JsonSubtypes.KnownSubType(typeof(ASTArrayDeclarator), "ArrayDeclarator")]
     [JsonSubtypes.KnownSubType(typeof(ASTVariableDeclarator), "VariableDeclarator")]
     [JsonSubtypes.KnownSubType(typeof(ASTFunctionDeclarator), "FunctionDeclarator")]
-    abstract class ASTDeclarator : ASTNode
+    abstract public class ASTDeclarator : ASTNode
     {
         public ASTDeclarator(string type) : base(type)
         {
 
         }
     }
-    class ASTParamsDeclarator : ASTNode
+    public class ASTParamsDeclarator : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "specfiers")]
         public List<ASTToken> Specfiers { get; set; }
@@ -167,7 +167,7 @@ namespace ParserSharp
             Declarator = declarator;
         }
     }
-    class ASTInitList : ASTNode
+    public class ASTInitList : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "declarator")]
         public ASTDeclarator Declarator { get; set; }
@@ -183,7 +183,7 @@ namespace ParserSharp
             Expressions = e;
         }
     }
-    class ASTIdentifier : ASTExpression
+    public class ASTIdentifier : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public string Value { get; set; }
@@ -199,7 +199,7 @@ namespace ParserSharp
             TokenID = tid;
         }
     }
-    class ASTArrayAccess : ASTExpression
+    public class ASTArrayAccess : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "arrayName")]
         public ASTExpression ArrayName { get; set; }
@@ -215,7 +215,7 @@ namespace ParserSharp
             Elements = elements;
         }
     }
-    class ASTBinaryExpression : ASTExpression
+    public class ASTBinaryExpression : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "op")]
         public ASTToken Operator { get; set; }
@@ -234,7 +234,7 @@ namespace ParserSharp
             Expr2 = e2;
         }
     }
-    class ASTCharConstant : ASTExpression
+    public class ASTCharConstant : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public string Value { get; set; }
@@ -250,7 +250,7 @@ namespace ParserSharp
             TokenID = tid;
         }
     }
-    class ASTFloatConstant : ASTExpression
+    public class ASTFloatConstant : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public double Value { get; set; }
@@ -266,7 +266,7 @@ namespace ParserSharp
             TokenID = tid;
         }
     }
-    class ASTFunctionCall : ASTExpression
+    public class ASTFunctionCall : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "funcname")]
         public ASTExpression FunctionName { get; set; }
@@ -282,7 +282,7 @@ namespace ParserSharp
             ArgList = args;
         }
     }
-    class ASTIntegerConstant : ASTExpression
+    public class ASTIntegerConstant : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public int Value { get; set; }
@@ -298,7 +298,7 @@ namespace ParserSharp
             TokenID = tid;
         }
     }
-    class ASTPostfixExpression : ASTExpression
+    public class ASTPostfixExpression : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "expr")]
         public ASTExpression Expression { get; set; }
@@ -314,7 +314,7 @@ namespace ParserSharp
             Operator = op;
         }
     }
-    class ASTStringConstant : ASTExpression
+    public class ASTStringConstant : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public string Value { get; set; }
@@ -330,7 +330,7 @@ namespace ParserSharp
             TokenID = tid;
         }
     }
-    class ASTUnaryExpression : ASTExpression
+    public class ASTUnaryExpression : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "op")]
         public ASTToken Operator { get; set; }
@@ -346,14 +346,14 @@ namespace ParserSharp
             Operator = op;
         }
     }
-    class ASTBreakStatement : ASTStatement
+    public class ASTBreakStatement : ASTStatement
     {
         public ASTBreakStatement() : base("BreakStatement")
         {
 
         }
     }
-    class ASTCompoundStatement : ASTStatement
+    public class ASTCompoundStatement : ASTStatement
     {
         [JsonProperty(Order = 2, PropertyName = "blockItems")]
         public List<ASTNode> BlockItems { get; set; }
@@ -366,14 +366,14 @@ namespace ParserSharp
             BlockItems = items;
         }
     }
-    class ASTContinueStatement : ASTStatement
+    public class ASTContinueStatement : ASTStatement
     {
         public ASTContinueStatement() : base("ContinueStatement")
         {
 
         }
     }
-    class ASTExpressionStatement : ASTStatement
+    public class ASTExpressionStatement : ASTStatement
     {
         [JsonProperty(Order = 2, PropertyName = "exprs")]
         public List<ASTNode> Expressions { get; set; }
@@ -386,7 +386,7 @@ namespace ParserSharp
             Expressions = exprs;
         }
     }
-    class ASTIterationDeclaredStatement : ASTStatement
+    public class ASTIterationDeclaredStatement : ASTStatement
     {
         [JsonProperty(Order = 2, PropertyName = "init")]
         public ASTDeclaration Initilize { get; set; }
@@ -411,7 +411,7 @@ namespace ParserSharp
             Stat = stat;
         }
     }
-    class ASTIterationStatement : ASTStatement
+    public class ASTIterationStatement : ASTStatement
     {
         [JsonProperty(Order = 2, PropertyName = "init")]
         public List<ASTNode> Initilize { get; set; }
@@ -436,7 +436,7 @@ namespace ParserSharp
             Stat = stat;
         }
     }
-    class ASTReturnStatement : ASTStatement
+    public class ASTReturnStatement : ASTStatement
     {
         [JsonProperty(Order = 2, PropertyName = "expr")]
         public List<ASTNode> Expression { get; set; }
@@ -449,7 +449,7 @@ namespace ParserSharp
             Expression = expr;
         }
     }
-    class ASTSelectionStatement : ASTStatement
+    public class ASTSelectionStatement : ASTStatement
     {
         [JsonProperty(Order = 2, PropertyName = "cond")]
         public List<ASTNode> Condition { get; set; }
@@ -470,7 +470,7 @@ namespace ParserSharp
             Otherwise = otherwise;
         }
     }
-    class ASTArrayDeclarator : ASTDeclarator
+    public class ASTArrayDeclarator : ASTDeclarator
     {
         [JsonProperty(Order = 2, PropertyName = "declarator")]
         public ASTDeclarator Declarator { get; set; }
@@ -486,7 +486,7 @@ namespace ParserSharp
             Expression = expressions;
         }
     }
-    class ASTVariableDeclarator : ASTDeclarator
+    public class ASTVariableDeclarator : ASTDeclarator
     {
         [JsonProperty(Order = 2, PropertyName = "identifier")]
         public ASTIdentifier Identifier { get; set; }
@@ -499,7 +499,7 @@ namespace ParserSharp
             Identifier = declarator;
         }
     }
-    class ASTFunctionDeclarator : ASTDeclarator
+    public class ASTFunctionDeclarator : ASTDeclarator
     {
         [JsonProperty(Order = 2, PropertyName = "declarator")]
         public ASTDeclarator Declarator { get; set; }
