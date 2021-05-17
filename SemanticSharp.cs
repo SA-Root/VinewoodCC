@@ -11,13 +11,13 @@ namespace VinewoodCC
         private ASTNode Root { get; set; }
         private int LoadAST(string path)
         {
-            var jsonAST = "";
             try
             {
                 var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
                 using (var reader = new StreamReader(stream))
                 {
-                    jsonAST = reader.ReadToEnd();
+                    var jsonAST = reader.ReadToEnd();
+                    Root = JsonConvert.DeserializeObject<ASTNode>(jsonAST);
                 }
             }
             catch (Exception e)
@@ -25,12 +25,11 @@ namespace VinewoodCC
                 Console.WriteLine(e.StackTrace);
                 Console.WriteLine($"Could not read file: {path}");
             }
-            Root = JsonConvert.DeserializeObject<ASTNode>(jsonAST);
             return 0;
         }
         private void SemanticCheck()
         {
-            
+            Root.AOTCheck(null);
         }
         public void run(string arg)
         {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using JsonSubTypes;
 
-namespace ParserSharp
+namespace VinewoodCC
 {
     [JsonConverter(typeof(JsonSubtypes), "type")]
     [JsonSubtypes.KnownSubType(typeof(ASTCompilationUnit), "Program")]
@@ -24,11 +24,17 @@ namespace ParserSharp
         {
             Type = type;
         }
+        public virtual int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTCompilationUnit : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "items")]
         public List<ASTNode> Items { get; set; }
+        [JsonIgnore]
+        public Dictionary<string, STItem> GlobalSymbolTable { get; set; }
         public ASTCompilationUnit() : base("Program")
         {
             Items = new List<ASTNode>();
@@ -36,6 +42,12 @@ namespace ParserSharp
         public ASTCompilationUnit(List<ASTNode> items) : base("Program")
         {
             Items = items;
+        }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            GlobalSymbolTable = new Dictionary<string, STItem>();
+            
+            return 0;
         }
     }
     [JsonConverter(typeof(JsonSubtypes), "type")]
@@ -90,6 +102,10 @@ namespace ParserSharp
             Declarator = declarator;
             Body = bodyStatement;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTDeclaration : ASTNode
     {
@@ -107,6 +123,10 @@ namespace ParserSharp
             Specifiers = specList;
             InitLists = initList;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTToken : ASTNode
     {
@@ -123,6 +143,10 @@ namespace ParserSharp
             Value = value;
             TokenID = tid;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTTypename : ASTNode
     {
@@ -138,6 +162,10 @@ namespace ParserSharp
         {
             Specfiers = specList;
             Declarator = declarator;
+        }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
         }
     }
     [JsonConverter(typeof(JsonSubtypes), "type")]
@@ -166,6 +194,10 @@ namespace ParserSharp
             Specfiers = specList;
             Declarator = declarator;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTInitList : ASTNode
     {
@@ -181,6 +213,10 @@ namespace ParserSharp
         {
             Declarator = d;
             Expressions = e;
+        }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
         }
     }
     public class ASTIdentifier : ASTExpression
@@ -198,6 +234,10 @@ namespace ParserSharp
             Value = value;
             TokenID = tid;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTArrayAccess : ASTExpression
     {
@@ -213,6 +253,10 @@ namespace ParserSharp
         {
             ArrayName = arrayname;
             Elements = elements;
+        }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
         }
     }
     public class ASTBinaryExpression : ASTExpression
@@ -233,6 +277,10 @@ namespace ParserSharp
             Expr1 = e1;
             Expr2 = e2;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTCharConstant : ASTExpression
     {
@@ -248,6 +296,10 @@ namespace ParserSharp
         {
             Value = value;
             TokenID = tid;
+        }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
         }
     }
     public class ASTFloatConstant : ASTExpression
@@ -265,6 +317,10 @@ namespace ParserSharp
             Value = value;
             TokenID = tid;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTFunctionCall : ASTExpression
     {
@@ -280,6 +336,10 @@ namespace ParserSharp
         {
             FunctionName = name;
             ArgList = args;
+        }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
         }
     }
     public class ASTIntegerConstant : ASTExpression
@@ -297,6 +357,10 @@ namespace ParserSharp
             Value = value;
             TokenID = tid;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTPostfixExpression : ASTExpression
     {
@@ -312,6 +376,10 @@ namespace ParserSharp
         {
             Expression = expr;
             Operator = op;
+        }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
         }
     }
     public class ASTStringConstant : ASTExpression
@@ -329,6 +397,10 @@ namespace ParserSharp
             Value = value;
             TokenID = tid;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTUnaryExpression : ASTExpression
     {
@@ -345,12 +417,20 @@ namespace ParserSharp
             Expression = expr;
             Operator = op;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTBreakStatement : ASTStatement
     {
         public ASTBreakStatement() : base("BreakStatement")
         {
 
+        }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
         }
     }
     public class ASTCompoundStatement : ASTStatement
@@ -365,12 +445,20 @@ namespace ParserSharp
         {
             BlockItems = items;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTContinueStatement : ASTStatement
     {
         public ASTContinueStatement() : base("ContinueStatement")
         {
 
+        }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
         }
     }
     public class ASTExpressionStatement : ASTStatement
@@ -384,6 +472,10 @@ namespace ParserSharp
         public ASTExpressionStatement(List<ASTNode> exprs) : base("ExpressionStatement")
         {
             Expressions = exprs;
+        }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
         }
     }
     public class ASTIterationDeclaredStatement : ASTStatement
@@ -410,6 +502,10 @@ namespace ParserSharp
             Step = step;
             Stat = stat;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTIterationStatement : ASTStatement
     {
@@ -435,6 +531,10 @@ namespace ParserSharp
             Step = step;
             Stat = stat;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTReturnStatement : ASTStatement
     {
@@ -447,6 +547,10 @@ namespace ParserSharp
         public ASTReturnStatement(List<ASTNode> expr) : base("ReturnStatement")
         {
             Expression = expr;
+        }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
         }
     }
     public class ASTSelectionStatement : ASTStatement
@@ -469,6 +573,10 @@ namespace ParserSharp
             Then = then;
             Otherwise = otherwise;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTArrayDeclarator : ASTDeclarator
     {
@@ -485,6 +593,10 @@ namespace ParserSharp
             Declarator = declarator;
             Expression = expressions;
         }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
+        }
     }
     public class ASTVariableDeclarator : ASTDeclarator
     {
@@ -497,6 +609,10 @@ namespace ParserSharp
         public ASTVariableDeclarator(ASTIdentifier declarator) : base("VariableDeclarator")
         {
             Identifier = declarator;
+        }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
         }
     }
     public class ASTFunctionDeclarator : ASTDeclarator
@@ -514,6 +630,10 @@ namespace ParserSharp
         {
             Declarator = declarator;
             Parameters = paramsDecl;
+        }
+        public override int AOTCheck(Dictionary<string, STItem> GST)
+        {
+            return 0;
         }
     }
 }
