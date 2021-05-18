@@ -3,20 +3,43 @@ using System.Collections.Generic;
 
 namespace VinewoodCC
 {
-    public enum AOTCheckExtraArg
+    public class AOTCheckExtraArg
     {
-        isInLoop
+        public LinkedList<STLoopItem> Loops { get; set; }
+        public string VType { get; set; }
+        public Boolean isInLoop { get; set; }
+        public Stack<int> MultiDimArray { get; set; }
+        public AOTCheckExtraArg()
+        {
+            Loops = new LinkedList<STLoopItem>();
+            VType = null;
+            isInLoop = false;
+            MultiDimArray = null;
+        }
     }
     public enum SymbolType
     {
         Variable,
         Array,
-        Function
+        Function,
+        Loop
     }
     public abstract class STItem
     {
         public string Identifier { get; set; }
         public SymbolType STType { get; set; }
+    }
+    public class STLoopItem : STItem
+    {
+        //Identifier means loop-var
+        public Dictionary<string, STItem> LPT { get; set; }
+        public STLoopItem(string lvar, Dictionary<string, STItem> lpt)
+        {
+            Identifier = lvar;
+            LPT = lpt;
+            STType = SymbolType.Loop;
+        }
+        public STLoopItem() { }
     }
     public class STVariableItem : STItem
     {

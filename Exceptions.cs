@@ -4,12 +4,13 @@ namespace VinewoodCC
 {
     public class SemanticErrors
     {
-        public static readonly string VCE0001 = "[ERROR]VCE0001: Variable '{0}' already defined";
-        public static readonly string VCE0002 = "[ERROR]VCE0002: Variable '{0}' not defined";
+        public static readonly string VCE0001 = "[ERROR]VCE0001: Variable or array '{0}' already defined";
+        public static readonly string VCE0002 = "[ERROR]VCE0002: Variable or array '{0}' not defined";
         public static readonly string VCE0003 = "[ERROR]VCE0003: 'break' statement not in loop";
         public static readonly string VCE0004 = "[ERROR]VCE0004: Function '{0}' not defined";
         public static readonly string VCE0005 = "[ERROR]VCE0005: '{0}' is not a function";
         public static readonly string VCE0006 = "[ERROR]VCE0006: '{0}' is not a variable or array";
+        public static readonly string VCE0007 = "[ERROR]VCE0007: 'continue' statement not in loop";
     }
 }
 

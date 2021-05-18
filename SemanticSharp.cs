@@ -27,8 +27,13 @@ namespace VinewoodCC
         }
         private void SemanticCheck()
         {
-            Root.AOTCheck(null, null);
+            Root.AOTCheck(null, null, null);
             //函数和变量不可同名
+            //函数内不能定义函数
+            //无函数头
+            //无表达式内大括号
+            //无重载
+            //函数重定义不检查
         }
         public void run(string arg)
         {
