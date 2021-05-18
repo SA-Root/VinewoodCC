@@ -11,9 +11,29 @@ namespace VinewoodCC
     [JsonSubtypes.KnownSubType(typeof(ASTDeclaration), "Declaration")]
     [JsonSubtypes.KnownSubType(typeof(ASTToken), "Token")]
     [JsonSubtypes.KnownSubType(typeof(ASTTypename), "Typename")]
-    [JsonSubtypes.KnownSubType(typeof(ASTDeclarator), "Declarator")]
     [JsonSubtypes.KnownSubType(typeof(ASTParamsDeclarator), "ParamsDeclarator")]
     [JsonSubtypes.KnownSubType(typeof(ASTInitList), "InitList")]
+    [JsonSubtypes.KnownSubType(typeof(ASTIdentifier), "Identifier")]
+    [JsonSubtypes.KnownSubType(typeof(ASTArrayAccess), "ArrayAccess")]
+    [JsonSubtypes.KnownSubType(typeof(ASTBinaryExpression), "BinaryExpression")]
+    [JsonSubtypes.KnownSubType(typeof(ASTFunctionCall), "FunctionCall")]
+    [JsonSubtypes.KnownSubType(typeof(ASTPostfixExpression), "PostfixExpression")]
+    [JsonSubtypes.KnownSubType(typeof(ASTUnaryExpression), "UnaryExpression")]
+    [JsonSubtypes.KnownSubType(typeof(ASTCharConstant), "CharConstant")]
+    [JsonSubtypes.KnownSubType(typeof(ASTFloatConstant), "FloatConstant")]
+    [JsonSubtypes.KnownSubType(typeof(ASTStringConstant), "StringConstant")]
+    [JsonSubtypes.KnownSubType(typeof(ASTIntegerConstant), "IntegerConstant")]
+    [JsonSubtypes.KnownSubType(typeof(ASTBreakStatement), "BreakStatement")]
+    [JsonSubtypes.KnownSubType(typeof(ASTCompoundStatement), "CompoundStatement")]
+    [JsonSubtypes.KnownSubType(typeof(ASTContinueStatement), "ContinueStatement")]
+    [JsonSubtypes.KnownSubType(typeof(ASTExpressionStatement), "ExpressionStatement")]
+    [JsonSubtypes.KnownSubType(typeof(ASTIterationDeclaredStatement), "IterationDeclaredStatement")]
+    [JsonSubtypes.KnownSubType(typeof(ASTIterationStatement), "IterationStatement")]
+    [JsonSubtypes.KnownSubType(typeof(ASTReturnStatement), "ReturnStatement")]
+    [JsonSubtypes.KnownSubType(typeof(ASTSelectionStatement), "SelectionStatement")]
+    [JsonSubtypes.KnownSubType(typeof(ASTArrayDeclarator), "ArrayDeclarator")]
+    [JsonSubtypes.KnownSubType(typeof(ASTVariableDeclarator), "VariableDeclarator")]
+    [JsonSubtypes.KnownSubType(typeof(ASTFunctionDeclarator), "FunctionDeclarator")]
     public class ASTNode
     {
         [JsonProperty(Order = 1, PropertyName = "type")]
@@ -22,7 +42,9 @@ namespace VinewoodCC
         {
             Type = type;
         }
-        public virtual int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        //extra args:
+        //0: string(vtype)/(in-loop mark)
+        public virtual int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
             return 0;
         }
@@ -41,7 +63,7 @@ namespace VinewoodCC
         {
             Items = items;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
             GlobalSymbolTable = new Dictionary<string, STItem>();
             foreach (var i in Items)
@@ -112,7 +134,7 @@ namespace VinewoodCC
             Declarator = declarator;
             Body = bodyStatement;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
             LocalSymbolTable = new Dictionary<string, STItem>();
             var funcDef = new STFunctionItem()
@@ -165,19 +187,12 @@ namespace VinewoodCC
             Specifiers = specList;
             InitLists = initList;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
             var vtype = Specifiers[0].Value;
             foreach (var i in InitLists)
             {
-                if (i.Declarator is ASTVariableDeclarator vDecl)
-                {
-                    vDecl.AOTCheck_INIT(GST, null, vtype);
-                }
-                else if (i.Declarator is ASTArrayDeclarator aDecl)
-                {
-                    aDecl.AOTCheck_INIT(GST, null, vtype);
-                }
+                i.Declarator.AOTCheck(GST, null, vtype);
             }
             return 0;
         }
@@ -288,9 +303,27 @@ namespace VinewoodCC
             ArrayName = arrayname;
             Elements = elements;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
-            
+            var id = (ArrayName as ASTIdentifier).Value;
+            //local array
+            if (LST.ContainsKey(id))
+            {
+
+            }
+            else
+            {
+                //global array
+                if (GST.ContainsKey(id))
+                {
+
+                }
+                //not defined
+                else
+                {
+                    Console.WriteLine(SemanticErrors.VCE0002, id);
+                }
+            }
             return 0;
         }
     }
@@ -312,8 +345,10 @@ namespace VinewoodCC
             Expr1 = e1;
             Expr2 = e2;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
+            Expr1.AOTCheck(GST, LST);
+            Expr2.AOTCheck(GST, LST);
             return 0;
         }
     }
@@ -332,10 +367,6 @@ namespace VinewoodCC
             Value = value;
             TokenID = tid;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
-        {
-            return 0;
-        }
     }
     public class ASTFloatConstant : ASTConstant
     {
@@ -351,10 +382,6 @@ namespace VinewoodCC
         {
             Value = value;
             TokenID = tid;
-        }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
-        {
-            return 0;
         }
     }
     public class ASTFunctionCall : ASTExpression
@@ -372,8 +399,22 @@ namespace VinewoodCC
             FunctionName = name;
             ArgList = args;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
+            var fname = (FunctionName as ASTIdentifier).Value;
+            //func not defined
+            if (!GST.ContainsKey(fname))
+            {
+                Console.WriteLine(SemanticErrors.VCE0004, fname);
+            }
+            else
+            {
+                //the name is not a function
+                if (GST[fname] is not STFunctionItem)
+                {
+                    Console.WriteLine(SemanticErrors.VCE0005, fname);
+                }
+            }
             return 0;
         }
     }
@@ -392,10 +433,6 @@ namespace VinewoodCC
             Value = value;
             TokenID = tid;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
-        {
-            return 0;
-        }
     }
     public class ASTPostfixExpression : ASTExpression
     {
@@ -412,8 +449,32 @@ namespace VinewoodCC
             Expression = expr;
             Operator = op;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
+            var id = (Expression as ASTIdentifier).Value;
+            if (LST.ContainsKey(id))
+            {
+                //the name is not a var or array
+                if ((LST[id] is not STVariableItem) && (LST[id] is not STArrayItem))
+                {
+                    Console.WriteLine(SemanticErrors.VCE0006, id);
+                }
+            }
+            else
+            {
+                if (GST.ContainsKey(id))
+                {
+                    //the name is not a var or array
+                    if ((GST[id] is not STVariableItem) && (GST[id] is not STArrayItem))
+                    {
+                        Console.WriteLine(SemanticErrors.VCE0006, id);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine(SemanticErrors.VCE0002, id);
+                }
+            }
             return 0;
         }
     }
@@ -432,10 +493,6 @@ namespace VinewoodCC
             Value = value;
             TokenID = tid;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
-        {
-            return 0;
-        }
     }
     public class ASTUnaryExpression : ASTExpression
     {
@@ -452,8 +509,32 @@ namespace VinewoodCC
             Expression = expr;
             Operator = op;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
+            var id = (Expression as ASTIdentifier).Value;
+            if (LST.ContainsKey(id))
+            {
+                //the name is not a var or array
+                if ((LST[id] is not STVariableItem) && (LST[id] is not STArrayItem))
+                {
+                    Console.WriteLine(SemanticErrors.VCE0006, id);
+                }
+            }
+            else
+            {
+                if (GST.ContainsKey(id))
+                {
+                    //the name is not a var or array
+                    if ((GST[id] is not STVariableItem) && (GST[id] is not STArrayItem))
+                    {
+                        Console.WriteLine(SemanticErrors.VCE0006, id);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine(SemanticErrors.VCE0002, id);
+                }
+            }
             return 0;
         }
     }
@@ -463,8 +544,12 @@ namespace VinewoodCC
         {
 
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
+            if (args.Length == 0 || (args[0] is not AOTCheckExtraArg.isInLoop))
+            {
+                Console.WriteLine(SemanticErrors.VCE0003);
+            }
             return 0;
         }
     }
@@ -480,20 +565,12 @@ namespace VinewoodCC
         {
             BlockItems = items;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
-        {
-            return 0;
-        }
     }
     public class ASTContinueStatement : ASTStatement
     {
         public ASTContinueStatement() : base("ContinueStatement")
         {
 
-        }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
-        {
-            return 0;
         }
     }
     public class ASTExpressionStatement : ASTStatement
@@ -508,7 +585,7 @@ namespace VinewoodCC
         {
             Expressions = exprs;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
             return 0;
         }
@@ -537,7 +614,7 @@ namespace VinewoodCC
             Step = step;
             Stat = stat;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
             return 0;
         }
@@ -566,7 +643,7 @@ namespace VinewoodCC
             Step = step;
             Stat = stat;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
             return 0;
         }
@@ -583,7 +660,7 @@ namespace VinewoodCC
         {
             Expression = expr;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
             return 0;
         }
@@ -608,7 +685,7 @@ namespace VinewoodCC
             Then = then;
             Otherwise = otherwise;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
             return 0;
         }
@@ -628,11 +705,7 @@ namespace VinewoodCC
             Declarator = declarator;
             Expression = expressions;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
-        {
-            return 0;
-        }
-        public int AOTCheck_INIT(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, string vtype)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
             return 0;
         }
@@ -649,11 +722,7 @@ namespace VinewoodCC
         {
             Identifier = declarator;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
-        {
-            return 0;
-        }
-        public int AOTCheck_INIT(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, string vtype)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
             return 0;
         }
@@ -674,7 +743,7 @@ namespace VinewoodCC
             Declarator = declarator;
             Parameters = paramsDecl;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, params object[] args)
         {
             return 0;
         }

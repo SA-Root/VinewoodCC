@@ -3,6 +3,10 @@ using System.Collections.Generic;
 
 namespace VinewoodCC
 {
+    public enum AOTCheckExtraArg
+    {
+        isInLoop
+    }
     public enum SymbolType
     {
         Variable,

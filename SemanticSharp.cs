@@ -28,6 +28,7 @@ namespace VinewoodCC
         private void SemanticCheck()
         {
             Root.AOTCheck(null, null);
+            //函数和变量不可同名
         }
         public void run(string arg)
         {
