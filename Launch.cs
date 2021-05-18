@@ -13,7 +13,7 @@ namespace VinewoodCC
             // var PS = new ParserSharp.Parser();
             // PS.Run(LS.OutputFile);
             var SC = new Semantica();
-            //SC.run(PS.OutputFile);
+            // SC.run(PS.OutputFile);
             SC.run(path);
         }
         public static void Main(string[] args)

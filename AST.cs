@@ -7,8 +7,6 @@ namespace VinewoodCC
 {
     [JsonConverter(typeof(JsonSubtypes), "type")]
     [JsonSubtypes.KnownSubType(typeof(ASTCompilationUnit), "Program")]
-    [JsonSubtypes.KnownSubType(typeof(ASTExpression), "Expression")]
-    [JsonSubtypes.KnownSubType(typeof(ASTStatement), "Statement")]
     [JsonSubtypes.KnownSubType(typeof(ASTFunctionDefine), "FunctionDefine")]
     [JsonSubtypes.KnownSubType(typeof(ASTDeclaration), "Declaration")]
     [JsonSubtypes.KnownSubType(typeof(ASTToken), "Token")]
@@ -57,16 +55,23 @@ namespace VinewoodCC
     [JsonSubtypes.KnownSubType(typeof(ASTIdentifier), "Identifier")]
     [JsonSubtypes.KnownSubType(typeof(ASTArrayAccess), "ArrayAccess")]
     [JsonSubtypes.KnownSubType(typeof(ASTBinaryExpression), "BinaryExpression")]
+    [JsonSubtypes.KnownSubType(typeof(ASTFunctionCall), "FunctionCall")]
+    [JsonSubtypes.KnownSubType(typeof(ASTPostfixExpression), "PostfixExpression")]
+    [JsonSubtypes.KnownSubType(typeof(ASTUnaryExpression), "UnaryExpression")]
     [JsonSubtypes.KnownSubType(typeof(ASTCharConstant), "CharConstant")]
     [JsonSubtypes.KnownSubType(typeof(ASTFloatConstant), "FloatConstant")]
-    [JsonSubtypes.KnownSubType(typeof(ASTFunctionCall), "FunctionCall")]
-    [JsonSubtypes.KnownSubType(typeof(ASTIntegerConstant), "IntegerConstant")]
-    [JsonSubtypes.KnownSubType(typeof(ASTPostfixExpression), "PostfixExpression")]
     [JsonSubtypes.KnownSubType(typeof(ASTStringConstant), "StringConstant")]
-    [JsonSubtypes.KnownSubType(typeof(ASTUnaryExpression), "UnaryExpression")]
-    abstract public class ASTExpression : ASTNode
+    [JsonSubtypes.KnownSubType(typeof(ASTIntegerConstant), "IntegerConstant")]
+    public abstract class ASTExpression : ASTNode
     {
         public ASTExpression(string type) : base(type)
+        {
+
+        }
+    }
+    public abstract class ASTConstant : ASTExpression
+    {
+        public ASTConstant(string type) : base(type)
         {
 
         }
@@ -80,7 +85,7 @@ namespace VinewoodCC
     [JsonSubtypes.KnownSubType(typeof(ASTIterationStatement), "IterationStatement")]
     [JsonSubtypes.KnownSubType(typeof(ASTReturnStatement), "ReturnStatement")]
     [JsonSubtypes.KnownSubType(typeof(ASTSelectionStatement), "SelectionStatement")]
-    abstract public class ASTStatement : ASTNode
+    public abstract class ASTStatement : ASTNode
     {
         public ASTStatement(string type) : base(type)
         {
@@ -110,7 +115,37 @@ namespace VinewoodCC
         public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
             LocalSymbolTable = new Dictionary<string, STItem>();
-
+            var funcDef = new STFunctionItem()
+            {
+                ArgTypes = new List<string>(),
+                LST = LocalSymbolTable,
+                //get return type
+                RetType = Specifiers[0].Value,
+                //get func name
+                Identifier = ((Declarator as ASTFunctionDeclarator)?.Declarator as ASTVariableDeclarator)?.Identifier.Value
+            };
+            //get params
+            var param = (Declarator as ASTFunctionDeclarator).Parameters;
+            foreach (var p in param)
+            {
+                var arg1 = new STVariableItem(p.Specfiers[0].Value, (p.Declarator as ASTVariableDeclarator)?.Identifier.Value);
+                //redefine
+                if (LocalSymbolTable.ContainsKey(arg1.Identifier))
+                {
+                    Console.WriteLine(SemanticErrors.VCE0001, arg1.Identifier);
+                }
+                //new
+                else
+                {
+                    LocalSymbolTable[arg1.Identifier] = arg1;
+                    funcDef.ArgTypes.Add(arg1.ValueType);
+                }
+            }
+            //in-function check
+            foreach (var i in Body.BlockItems)
+            {
+                i.AOTCheck(GST, LocalSymbolTable);
+            }
             return 0;
         }
     }
@@ -132,6 +167,18 @@ namespace VinewoodCC
         }
         public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
+            var vtype = Specifiers[0].Value;
+            foreach (var i in InitLists)
+            {
+                if (i.Declarator is ASTVariableDeclarator vDecl)
+                {
+                    vDecl.AOTCheck_INIT(GST, null, vtype);
+                }
+                else if (i.Declarator is ASTArrayDeclarator aDecl)
+                {
+                    aDecl.AOTCheck_INIT(GST, null, vtype);
+                }
+            }
             return 0;
         }
     }
@@ -150,10 +197,6 @@ namespace VinewoodCC
             Value = value;
             TokenID = tid;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
-        {
-            return 0;
-        }
     }
     public class ASTTypename : ASTNode
     {
@@ -169,10 +212,6 @@ namespace VinewoodCC
         {
             Specfiers = specList;
             Declarator = declarator;
-        }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
-        {
-            return 0;
         }
     }
     [JsonConverter(typeof(JsonSubtypes), "type")]
@@ -201,10 +240,6 @@ namespace VinewoodCC
             Specfiers = specList;
             Declarator = declarator;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
-        {
-            return 0;
-        }
     }
     public class ASTInitList : ASTNode
     {
@@ -221,10 +256,6 @@ namespace VinewoodCC
             Declarator = d;
             Expressions = e;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
-        {
-            return 0;
-        }
     }
     public class ASTIdentifier : ASTExpression
     {
@@ -240,10 +271,6 @@ namespace VinewoodCC
         {
             Value = value;
             TokenID = tid;
-        }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
-        {
-            return 0;
         }
     }
     public class ASTArrayAccess : ASTExpression
@@ -263,6 +290,7 @@ namespace VinewoodCC
         }
         public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
         {
+            
             return 0;
         }
     }
@@ -289,7 +317,7 @@ namespace VinewoodCC
             return 0;
         }
     }
-    public class ASTCharConstant : ASTExpression
+    public class ASTCharConstant : ASTConstant
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public string Value { get; set; }
@@ -309,7 +337,7 @@ namespace VinewoodCC
             return 0;
         }
     }
-    public class ASTFloatConstant : ASTExpression
+    public class ASTFloatConstant : ASTConstant
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public double Value { get; set; }
@@ -349,7 +377,7 @@ namespace VinewoodCC
             return 0;
         }
     }
-    public class ASTIntegerConstant : ASTExpression
+    public class ASTIntegerConstant : ASTConstant
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public int Value { get; set; }
@@ -389,7 +417,7 @@ namespace VinewoodCC
             return 0;
         }
     }
-    public class ASTStringConstant : ASTExpression
+    public class ASTStringConstant : ASTConstant
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public string Value { get; set; }
@@ -604,6 +632,10 @@ namespace VinewoodCC
         {
             return 0;
         }
+        public int AOTCheck_INIT(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, string vtype)
+        {
+            return 0;
+        }
     }
     public class ASTVariableDeclarator : ASTDeclarator
     {
@@ -618,6 +650,10 @@ namespace VinewoodCC
             Identifier = declarator;
         }
         public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST)
+        {
+            return 0;
+        }
+        public int AOTCheck_INIT(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, string vtype)
         {
             return 0;
         }

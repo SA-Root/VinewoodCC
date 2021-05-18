@@ -2,7 +2,12 @@ using System;
 
 namespace VinewoodCC
 {
-    
+    public class SemanticErrors
+    {
+        public static readonly string VCE0001 = "[ERROR]VCE0001: Variable '{0}' already defined";
+        public static readonly string VCE0002 = "[ERROR]VCE0002: Variable '{0}' not defined";
+        public static readonly string VCE0003 = "[ERROR]VCE0003: 'break' statement not in loop";
+    }
 }
 
 namespace ParserSharp

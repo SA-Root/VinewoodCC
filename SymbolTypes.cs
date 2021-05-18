@@ -16,32 +16,39 @@ namespace VinewoodCC
     }
     public class STVariableItem : STItem
     {
-        public string Value { get; set; }
-        public STVariableItem(string id, SymbolType st, string val)
+        public string ValueType { get; set; }
+        public STVariableItem(string id, string vtype)
         {
             Identifier = id;
-            STType = st;
-            Value = val;
+            STType = SymbolType.Variable;
+            ValueType = vtype;
         }
+        public STVariableItem() { }
     }
     public class STArrayItem : STItem
     {
         public List<int> Dimensions { get; set; }
-        public STArrayItem(string id, SymbolType st, List<int> dims)
+        public STArrayItem(string id, List<int> dims)
         {
             Identifier = id;
-            STType = st;
+            STType = SymbolType.Array;
             Dimensions = dims;
         }
+        public STArrayItem() { }
     }
     public class STFunctionItem : STItem
     {
         public List<string> ArgTypes { get; set; }
-        public STFunctionItem(string id, SymbolType st, List<string> argt)
+        public string RetType { get; set; }
+        public Dictionary<string, STItem> LST { get; set; }
+        public STFunctionItem(string id, string rett, List<string> argt, Dictionary<string, STItem> lst)
         {
             Identifier = id;
-            STType = st;
+            STType = SymbolType.Function;
+            RetType = rett;
             ArgTypes = argt;
+            LST = lst;
         }
+        public STFunctionItem() { }
     }
 }
