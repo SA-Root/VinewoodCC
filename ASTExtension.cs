@@ -32,6 +32,7 @@ namespace VinewoodCC
         public override void ILGenerate(LinkedList<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable)
         {
             ILProgram.AddLast(new QuadTuple(ILOperator.DataBegin, null, null, null));
+            ILProgram.AddLast(new QuadTuple(ILOperator.DataEnd, null, null, null));
             foreach (var i in Items)
             {
                 i.ILGenerate(ILProgram, null);
