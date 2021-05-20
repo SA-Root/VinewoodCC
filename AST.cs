@@ -49,7 +49,7 @@ namespace VinewoodCC
         {
             return 0;
         }
-        public virtual void ILGenerate(LinkedList<QuadTuple> ILProgram)
+        public virtual void ILGenerate(LinkedList<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable)
         {
 
         }
@@ -77,6 +77,14 @@ namespace VinewoodCC
                 i.AOTCheck(GlobalSymbolTable, null, earg);
             }
             return 0;
+        }
+        public override void ILGenerate(LinkedList<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable)
+        {
+            ILProgram.AddLast(new QuadTuple(ILOperator.DataBegin, null, null, null));
+            foreach (var i in Items)
+            {
+                i.ILGenerate(ILProgram, null);
+            }
         }
     }
     [JsonConverter(typeof(JsonSubtypes), "type")]
@@ -189,6 +197,20 @@ namespace VinewoodCC
                 i.AOTCheck(GST, LocalSymbolTable, earg);
             }
             return 0;
+        }
+        public override void ILGenerate(LinkedList<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable)
+        {
+            ZipBackTable = new Dictionary<string, int>();
+            var funcName = ((Declarator as ASTFunctionDeclarator).Declarator as ASTVariableDeclarator).Identifier.Value;
+            var fHead = new ILIdentifier(funcName, ILNameType.Function, null);
+            ILProgram.AddLast(new QuadTuple(ILOperator.ProcBegin, null, null, fHead));
+            //params
+
+            var fStart = ILProgram.Count - 1;
+            //body
+
+            ILProgram.ZipBack(ZipBackTable, fStart);
+            ILProgram.AddLast(new QuadTuple(ILOperator.ProcEnd, null, null, fHead));
         }
     }
     public class ASTDeclaration : ASTNode

@@ -11,8 +11,18 @@ namespace VinewoodCC
         {
             foreach (var i in ILProgram)
             {
-                Console.WriteLine("({0},{1},{2},{3})", i.Operator, i.RValueA.ID, i.RValueB.ID, i.LValue.ID);
+                Console.Write("({0},", i.Operator);
+                if (i.RValueA is not null) Console.Write(i.RValueA.ID);
+                Console.Write(",");
+                if (i.RValueB is not null) Console.Write(i.RValueB.ID);
+                Console.Write(",");
+                if (i.LValue is not null) Console.Write(i.LValue.ID);
+                Console.Write(")\n");
             }
+        }
+        public static void ZipBack(this LinkedList<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, int offset)
+        {
+
         }
     }
     public class ILGenerator
@@ -42,7 +52,8 @@ namespace VinewoodCC
         private void GenerateIR()
         {
             ILProgram = new LinkedList<QuadTuple>();
-            Root.ILGenerate(ILProgram);
+            Root.ILGenerate(ILProgram, null);
+            Console.WriteLine("---------------IR Code---------------");
             ILProgram.PrintToConsole();
             try
             {
