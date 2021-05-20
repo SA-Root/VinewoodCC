@@ -7,6 +7,7 @@ namespace VinewoodCC
     public class Semantica
     {
         private ASTNode Root { get; set; }
+        public static int HasError { get; set; }
         private int LoadAST(string path)
         {
             try
@@ -27,6 +28,7 @@ namespace VinewoodCC
         }
         private void SemanticCheck()
         {
+            HasError = 0;
             Root.AOTCheck(null, null, null);
             //函数和变量不可同名
             //函数内不能定义函数

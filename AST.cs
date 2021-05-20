@@ -34,7 +34,7 @@ namespace VinewoodCC
     [JsonSubtypes.KnownSubType(typeof(ASTArrayDeclarator), "ArrayDeclarator")]
     [JsonSubtypes.KnownSubType(typeof(ASTVariableDeclarator), "VariableDeclarator")]
     [JsonSubtypes.KnownSubType(typeof(ASTFunctionDeclarator), "FunctionDeclarator")]
-    public class ASTNode
+    public partial class ASTNode
     {
         [JsonProperty(Order = 1, PropertyName = "type")]
         public string Type { get; set; }
@@ -42,19 +42,8 @@ namespace VinewoodCC
         {
             Type = type;
         }
-        //extra args:
-        //0: List<STLoopItem>
-        //1: string vtype/enum isInLoop
-        public virtual int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            return 0;
-        }
-        public virtual void ILGenerate(LinkedList<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable)
-        {
-
-        }
     }
-    public class ASTCompilationUnit : ASTNode
+    public partial class ASTCompilationUnit : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "items")]
         public List<ASTNode> Items { get; set; }
@@ -68,24 +57,6 @@ namespace VinewoodCC
         {
             Items = items;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            GlobalSymbolTable = new Dictionary<string, STItem>();
-            earg = new AOTCheckExtraArg();
-            foreach (var i in Items)
-            {
-                i.AOTCheck(GlobalSymbolTable, null, earg);
-            }
-            return 0;
-        }
-        public override void ILGenerate(LinkedList<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable)
-        {
-            ILProgram.AddLast(new QuadTuple(ILOperator.DataBegin, null, null, null));
-            foreach (var i in Items)
-            {
-                i.ILGenerate(ILProgram, null);
-            }
-        }
     }
     [JsonConverter(typeof(JsonSubtypes), "type")]
     [JsonSubtypes.KnownSubType(typeof(ASTIdentifier), "Identifier")]
@@ -98,14 +69,14 @@ namespace VinewoodCC
     [JsonSubtypes.KnownSubType(typeof(ASTFloatConstant), "FloatConstant")]
     [JsonSubtypes.KnownSubType(typeof(ASTStringConstant), "StringConstant")]
     [JsonSubtypes.KnownSubType(typeof(ASTIntegerConstant), "IntegerConstant")]
-    public abstract class ASTExpression : ASTNode
+    public abstract partial class ASTExpression : ASTNode
     {
         public ASTExpression(string type) : base(type)
         {
 
         }
     }
-    public abstract class ASTConstant : ASTExpression
+    public abstract partial class ASTConstant : ASTExpression
     {
         public ASTConstant(string type) : base(type)
         {
@@ -121,14 +92,14 @@ namespace VinewoodCC
     [JsonSubtypes.KnownSubType(typeof(ASTIterationStatement), "IterationStatement")]
     [JsonSubtypes.KnownSubType(typeof(ASTReturnStatement), "ReturnStatement")]
     [JsonSubtypes.KnownSubType(typeof(ASTSelectionStatement), "SelectionStatement")]
-    public abstract class ASTStatement : ASTNode
+    public abstract partial class ASTStatement : ASTNode
     {
         public ASTStatement(string type) : base(type)
         {
 
         }
     }
-    public class ASTFunctionDefine : ASTNode
+    public partial class ASTFunctionDefine : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "specifiers")]
         public List<ASTToken> Specifiers { get; set; }
@@ -148,72 +119,8 @@ namespace VinewoodCC
             Declarator = declarator;
             Body = bodyStatement;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            LocalSymbolTable = new Dictionary<string, STItem>();
-            var funcDef = new STFunctionItem()
-            {
-                ArgTypes = new List<string>(),
-                LST = LocalSymbolTable,
-                //get return type
-                RetType = Specifiers[0].Value,
-                //get func name
-                Identifier = ((Declarator as ASTFunctionDeclarator)?.Declarator as ASTVariableDeclarator)?.Identifier.Value
-            };
-            //get params
-            var param = (Declarator as ASTFunctionDeclarator)?.Parameters;
-            if (param is not null)
-            {
-                foreach (var p in param)
-                {
-                    var arg1 = new STVariableItem(p.Specfiers[0].Value, (p.Declarator as ASTVariableDeclarator)?.Identifier.Value);
-                    //redefine
-                    if (LocalSymbolTable.ContainsKey(arg1.Identifier))
-                    {
-                        Console.WriteLine(SemanticErrors.VCE0001, arg1.Identifier);
-                    }
-                    //new
-                    else
-                    {
-                        LocalSymbolTable[arg1.Identifier] = arg1;
-                        funcDef.ArgTypes.Add(arg1.ValueType);
-                    }
-                }
-            }
-            //not defined
-            if (!GST.ContainsKey(funcDef.Identifier))
-            {
-                GST.Add(funcDef.Identifier, funcDef);
-            }
-            //defined
-            else
-            {
-                (GST[funcDef.Identifier] as STFunctionItem).LST = LocalSymbolTable;
-                (GST[funcDef.Identifier] as STFunctionItem).ArgTypes = funcDef.ArgTypes;
-            }
-            //in-function check
-            foreach (var i in Body.BlockItems)
-            {
-                i.AOTCheck(GST, LocalSymbolTable, earg);
-            }
-            return 0;
-        }
-        public override void ILGenerate(LinkedList<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable)
-        {
-            ZipBackTable = new Dictionary<string, int>();
-            var funcName = ((Declarator as ASTFunctionDeclarator).Declarator as ASTVariableDeclarator).Identifier.Value;
-            var fHead = new ILIdentifier(funcName, ILNameType.Function, null);
-            ILProgram.AddLast(new QuadTuple(ILOperator.ProcBegin, null, null, fHead));
-            //params
-
-            var fStart = ILProgram.Count - 1;
-            //body
-
-            ILProgram.ZipBack(ZipBackTable, fStart);
-            ILProgram.AddLast(new QuadTuple(ILOperator.ProcEnd, null, null, fHead));
-        }
     }
-    public class ASTDeclaration : ASTNode
+    public partial class ASTDeclaration : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "specifiers")]
         public List<ASTToken> Specifiers { get; set; }
@@ -229,21 +136,8 @@ namespace VinewoodCC
             Specifiers = specList;
             InitLists = initList;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            earg.VType = Specifiers[0].Value;
-            foreach (var i in InitLists)
-            {
-                i.Declarator.AOTCheck(GST, LST, earg);
-                if (i.Expressions.Count > 0)
-                {
-                    i.Expressions[0].AOTCheck(GST, LST, earg);
-                }
-            }
-            return 0;
-        }
     }
-    public class ASTToken : ASTNode
+    public partial class ASTToken : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public string Value { get; set; }
@@ -259,7 +153,7 @@ namespace VinewoodCC
             TokenID = tid;
         }
     }
-    public class ASTTypename : ASTNode
+    public partial class ASTTypename : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "specfiers")]
         public List<ASTToken> Specfiers { get; set; }
@@ -279,14 +173,14 @@ namespace VinewoodCC
     [JsonSubtypes.KnownSubType(typeof(ASTArrayDeclarator), "ArrayDeclarator")]
     [JsonSubtypes.KnownSubType(typeof(ASTVariableDeclarator), "VariableDeclarator")]
     [JsonSubtypes.KnownSubType(typeof(ASTFunctionDeclarator), "FunctionDeclarator")]
-    abstract public class ASTDeclarator : ASTNode
+    abstract public partial class ASTDeclarator : ASTNode
     {
         public ASTDeclarator(string type) : base(type)
         {
 
         }
     }
-    public class ASTParamsDeclarator : ASTNode
+    public partial class ASTParamsDeclarator : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "specfiers")]
         public List<ASTToken> Specfiers { get; set; }
@@ -302,7 +196,7 @@ namespace VinewoodCC
             Declarator = declarator;
         }
     }
-    public class ASTInitList : ASTNode
+    public partial class ASTInitList : ASTNode
     {
         [JsonProperty(Order = 2, PropertyName = "declarator")]
         public ASTDeclarator Declarator { get; set; }
@@ -318,7 +212,7 @@ namespace VinewoodCC
             Expressions = e;
         }
     }
-    public class ASTIdentifier : ASTExpression
+    public partial class ASTIdentifier : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public string Value { get; set; }
@@ -333,43 +227,8 @@ namespace VinewoodCC
             Value = value;
             TokenID = tid;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            var id = Value;
-            //local var
-            if (LST != null && LST.ContainsKey(id))
-            {
-
-            }
-            else
-            {
-                //global var
-                if (GST.ContainsKey(id))
-                {
-
-                }
-                //not defined
-                else
-                {
-                    bool defined = false;
-                    foreach (var i in earg.Loops)
-                    {
-                        if (i.LPT.ContainsKey(id))
-                        {
-                            defined = true;
-                            break;
-                        }
-                    }
-                    if (!defined)
-                    {
-                        Console.WriteLine(SemanticErrors.VCE0002, id);
-                    }
-                }
-            }
-            return 0;
-        }
     }
-    public class ASTArrayAccess : ASTExpression
+    public partial class ASTArrayAccess : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "arrayName")]
         public ASTExpression ArrayName { get; set; }
@@ -384,43 +243,8 @@ namespace VinewoodCC
             ArrayName = arrayname;
             Elements = elements;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            var id = (ArrayName as ASTIdentifier).Value;
-            //local array
-            if (LST != null && LST.ContainsKey(id))
-            {
-
-            }
-            else
-            {
-                //global array
-                if (GST.ContainsKey(id))
-                {
-
-                }
-                //not defined
-                else
-                {
-                    bool defined = false;
-                    foreach (var i in earg.Loops)
-                    {
-                        if (i.LPT.ContainsKey(id))
-                        {
-                            defined = true;
-                            break;
-                        }
-                    }
-                    if (!defined)
-                    {
-                        Console.WriteLine(SemanticErrors.VCE0002, id);
-                    }
-                }
-            }
-            return 0;
-        }
     }
-    public class ASTBinaryExpression : ASTExpression
+    public partial class ASTBinaryExpression : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "op")]
         public ASTToken Operator { get; set; }
@@ -438,14 +262,8 @@ namespace VinewoodCC
             Expr1 = e1;
             Expr2 = e2;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            Expr1.AOTCheck(GST, LST, earg);
-            Expr2.AOTCheck(GST, LST, earg);
-            return 0;
-        }
     }
-    public class ASTCharConstant : ASTConstant
+    public partial class ASTCharConstant : ASTConstant
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public string Value { get; set; }
@@ -461,7 +279,7 @@ namespace VinewoodCC
             TokenID = tid;
         }
     }
-    public class ASTFloatConstant : ASTConstant
+    public partial class ASTFloatConstant : ASTConstant
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public double Value { get; set; }
@@ -477,7 +295,7 @@ namespace VinewoodCC
             TokenID = tid;
         }
     }
-    public class ASTFunctionCall : ASTExpression
+    public partial class ASTFunctionCall : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "funcname")]
         public ASTExpression FunctionName { get; set; }
@@ -492,26 +310,8 @@ namespace VinewoodCC
             FunctionName = name;
             ArgList = args;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            var fname = (FunctionName as ASTIdentifier).Value;
-            //func not defined
-            if (!GST.ContainsKey(fname))
-            {
-                Console.WriteLine(SemanticErrors.VCE0004, fname);
-            }
-            else
-            {
-                //the name is not a function
-                if (GST[fname] is not STFunctionItem)
-                {
-                    Console.WriteLine(SemanticErrors.VCE0005, fname);
-                }
-            }
-            return 0;
-        }
     }
-    public class ASTIntegerConstant : ASTConstant
+    public partial class ASTIntegerConstant : ASTConstant
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public int Value { get; set; }
@@ -527,7 +327,7 @@ namespace VinewoodCC
             TokenID = tid;
         }
     }
-    public class ASTPostfixExpression : ASTExpression
+    public partial class ASTPostfixExpression : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "expr")]
         public ASTExpression Expression { get; set; }
@@ -542,48 +342,8 @@ namespace VinewoodCC
             Expression = expr;
             Operator = op;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            var id = (Expression as ASTIdentifier).Value;
-            if (LST.ContainsKey(id))
-            {
-                //the name is not a var or array
-                if ((LST[id] is not STVariableItem) && (LST[id] is not STArrayItem))
-                {
-                    Console.WriteLine(SemanticErrors.VCE0006, id);
-                }
-            }
-            else
-            {
-                if (GST.ContainsKey(id))
-                {
-                    //the name is not a var or array
-                    if ((GST[id] is not STVariableItem) && (GST[id] is not STArrayItem))
-                    {
-                        Console.WriteLine(SemanticErrors.VCE0006, id);
-                    }
-                }
-                else
-                {
-                    bool defined = false;
-                    foreach (var i in earg.Loops)
-                    {
-                        if (i.LPT.ContainsKey(id))
-                        {
-                            defined = true;
-                            break;
-                        }
-                    }
-                    if (!defined)
-                    {
-                        Console.WriteLine(SemanticErrors.VCE0002, id);
-                    }
-                }
-            }
-            return 0;
-        }
     }
-    public class ASTStringConstant : ASTConstant
+    public partial class ASTStringConstant : ASTConstant
     {
         [JsonProperty(Order = 2, PropertyName = "value")]
         public string Value { get; set; }
@@ -599,7 +359,7 @@ namespace VinewoodCC
             TokenID = tid;
         }
     }
-    public class ASTUnaryExpression : ASTExpression
+    public partial class ASTUnaryExpression : ASTExpression
     {
         [JsonProperty(Order = 2, PropertyName = "op")]
         public ASTToken Operator { get; set; }
@@ -614,63 +374,15 @@ namespace VinewoodCC
             Expression = expr;
             Operator = op;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            var id = (Expression as ASTIdentifier).Value;
-            if (LST.ContainsKey(id))
-            {
-                //the name is not a var or array
-                if ((LST[id] is not STVariableItem) && (LST[id] is not STArrayItem))
-                {
-                    Console.WriteLine(SemanticErrors.VCE0006, id);
-                }
-            }
-            else
-            {
-                if (GST.ContainsKey(id))
-                {
-                    //the name is not a var or array
-                    if ((GST[id] is not STVariableItem) && (GST[id] is not STArrayItem))
-                    {
-                        Console.WriteLine(SemanticErrors.VCE0006, id);
-                    }
-                }
-                else
-                {
-                    bool defined = false;
-                    foreach (var i in earg.Loops)
-                    {
-                        if (i.LPT.ContainsKey(id))
-                        {
-                            defined = true;
-                            break;
-                        }
-                    }
-                    if (!defined)
-                    {
-                        Console.WriteLine(SemanticErrors.VCE0002, id);
-                    }
-                }
-            }
-            return 0;
-        }
     }
-    public class ASTBreakStatement : ASTStatement
+    public partial class ASTBreakStatement : ASTStatement
     {
         public ASTBreakStatement() : base("BreakStatement")
         {
 
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            if (!earg.isInLoop)
-            {
-                Console.WriteLine(SemanticErrors.VCE0003);
-            }
-            return 0;
-        }
     }
-    public class ASTCompoundStatement : ASTStatement
+    public partial class ASTCompoundStatement : ASTStatement
     {
         [JsonProperty(Order = 2, PropertyName = "blockItems")]
         public List<ASTNode> BlockItems { get; set; }
@@ -683,22 +395,14 @@ namespace VinewoodCC
             BlockItems = items;
         }
     }
-    public class ASTContinueStatement : ASTStatement
+    public partial class ASTContinueStatement : ASTStatement
     {
         public ASTContinueStatement() : base("ContinueStatement")
         {
 
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            if (!earg.isInLoop)
-            {
-                Console.WriteLine(SemanticErrors.VCE0007);
-            }
-            return 0;
-        }
     }
-    public class ASTExpressionStatement : ASTStatement
+    public partial class ASTExpressionStatement : ASTStatement
     {
         [JsonProperty(Order = 2, PropertyName = "exprs")]
         public List<ASTNode> Expressions { get; set; }
@@ -710,16 +414,8 @@ namespace VinewoodCC
         {
             Expressions = exprs;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            foreach (var i in Expressions)
-            {
-                i.AOTCheck(GST, LST, earg);
-            }
-            return 0;
-        }
     }
-    public class ASTIterationDeclaredStatement : ASTStatement
+    public partial class ASTIterationDeclaredStatement : ASTStatement
     {
         [JsonProperty(Order = 2, PropertyName = "init")]
         public ASTDeclaration Initilize { get; set; }
@@ -743,27 +439,8 @@ namespace VinewoodCC
             Step = step;
             Stat = stat;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            var lpST = new STLoopItem()
-            {
-                LPT = new Dictionary<string, STItem>()
-            };
-            earg.Loops.AddLast(lpST);
-            Initilize?.AOTCheck(GST, LST, earg);
-            Condition?[0].AOTCheck(GST, LST, earg);
-            Step?[0].AOTCheck(GST, LST, earg);
-            earg.isInLoop = true;
-            foreach (var i in (Stat as ASTCompoundStatement)?.BlockItems)
-            {
-                i.AOTCheck(GST, LST, earg);
-            }
-            if (earg.Loops.Count <= 1) earg.isInLoop = false;
-            earg.Loops.RemoveLast();
-            return 0;
-        }
     }
-    public class ASTIterationStatement : ASTStatement
+    public partial class ASTIterationStatement : ASTStatement
     {
         [JsonProperty(Order = 2, PropertyName = "init")]
         public List<ASTNode> Initilize { get; set; }
@@ -787,27 +464,8 @@ namespace VinewoodCC
             Step = step;
             Stat = stat;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            var lpST = new STLoopItem()
-            {
-                LPT = new Dictionary<string, STItem>()
-            };
-            earg.Loops.AddLast(lpST);
-            Initilize?[0].AOTCheck(GST, LST, earg);
-            Condition?[0].AOTCheck(GST, LST, earg);
-            Step?[0].AOTCheck(GST, LST, earg);
-            earg.isInLoop = true;
-            foreach (var i in (Stat as ASTCompoundStatement)?.BlockItems)
-            {
-                i.AOTCheck(GST, LST, earg);
-            }
-            if (earg.Loops.Count <= 1) earg.isInLoop = false;
-            earg.Loops.RemoveLast();
-            return 0;
-        }
     }
-    public class ASTReturnStatement : ASTStatement
+    public partial class ASTReturnStatement : ASTStatement
     {
         [JsonProperty(Order = 2, PropertyName = "expr")]
         public List<ASTNode> Expression { get; set; }
@@ -820,7 +478,7 @@ namespace VinewoodCC
             Expression = expr;
         }
     }
-    public class ASTSelectionStatement : ASTStatement
+    public partial class ASTSelectionStatement : ASTStatement
     {
         [JsonProperty(Order = 2, PropertyName = "cond")]
         public List<ASTNode> Condition { get; set; }
@@ -840,15 +498,8 @@ namespace VinewoodCC
             Then = then;
             Otherwise = otherwise;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            Condition[0].AOTCheck(GST, LST, earg);
-            Then?.AOTCheck(GST, LST, earg);
-            Otherwise?.AOTCheck(GST, LST, earg);
-            return 0;
-        }
     }
-    public class ASTArrayDeclarator : ASTDeclarator
+    public partial class ASTArrayDeclarator : ASTDeclarator
     {
         [JsonProperty(Order = 2, PropertyName = "declarator")]
         public ASTDeclarator Declarator { get; set; }
@@ -863,55 +514,8 @@ namespace VinewoodCC
             Declarator = declarator;
             Expression = expressions;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            if (Declarator is ASTArrayDeclarator aDecl)
-            {
-                earg.MultiDimArray = new Stack<int>();
-                earg.MultiDimArray.Push((Expression as ASTIntegerConstant).Value);
-                aDecl.AOTCheck(GST, LST, earg);
-            }
-            else
-            {
-                var arrName = (Declarator as ASTVariableDeclarator).Identifier.Value;
-                earg.MultiDimArray.Push((Expression as ASTIntegerConstant).Value);
-                if (earg.Loops.Count > 0)
-                {
-                    if (earg.Loops.Last.Value.LPT.ContainsKey(arrName))
-                    {
-                        Console.WriteLine(SemanticErrors.VCE0001, arrName);
-                    }
-                    else
-                    {
-                        var dims = new List<int>();
-                        while (earg.MultiDimArray.Count > 0)
-                        {
-                            dims.Add(earg.MultiDimArray.Pop());
-                        }
-                        earg.Loops.Last.Value.LPT.Add(arrName, new STArrayItem(arrName, dims));
-                    }
-                }
-                else
-                {
-                    if (LST.ContainsKey(arrName))
-                    {
-                        Console.WriteLine(SemanticErrors.VCE0001, arrName);
-                    }
-                    else
-                    {
-                        var dims = new List<int>();
-                        while (earg.MultiDimArray.Count > 0)
-                        {
-                            dims.Add(earg.MultiDimArray.Pop());
-                        }
-                        LST.Add(arrName, new STArrayItem(arrName, dims));
-                    }
-                }
-            }
-            return 0;
-        }
     }
-    public class ASTVariableDeclarator : ASTDeclarator
+    public partial class ASTVariableDeclarator : ASTDeclarator
     {
         [JsonProperty(Order = 2, PropertyName = "identifier")]
         public ASTIdentifier Identifier { get; set; }
@@ -923,35 +527,8 @@ namespace VinewoodCC
         {
             Identifier = declarator;
         }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            var id = Identifier.Value;
-            if (earg.Loops.Count > 0)
-            {
-                if (earg.Loops.Last.Value.LPT.ContainsKey(id))
-                {
-                    Console.WriteLine(SemanticErrors.VCE0001, id);
-                }
-                else
-                {
-                    earg.Loops.Last.Value.LPT.Add(id, new STVariableItem(id, earg.VType));
-                }
-            }
-            else
-            {
-                if (LST.ContainsKey(id))
-                {
-                    Console.WriteLine(SemanticErrors.VCE0001, id);
-                }
-                else
-                {
-                    LST.Add(id, new STVariableItem(id, earg.VType));
-                }
-            }
-            return 0;
-        }
     }
-    public class ASTFunctionDeclarator : ASTDeclarator
+    public partial class ASTFunctionDeclarator : ASTDeclarator
     {
         [JsonProperty(Order = 2, PropertyName = "declarator")]
         public ASTDeclarator Declarator { get; set; }
@@ -966,13 +543,6 @@ namespace VinewoodCC
         {
             Declarator = declarator;
             Parameters = paramsDecl;
-        }
-        //global func define
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            var fName = (Declarator as ASTVariableDeclarator).Identifier.Value;
-            var fDef = new STFunctionItem(fName, earg.VType, null, null);
-            return 0;
         }
     }
 }
