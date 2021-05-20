@@ -12,7 +12,7 @@ namespace VinewoodCC
         {
             return 0;
         }
-        public virtual void ILGenerate(LinkedList<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable)
+        public virtual void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable)
         {
 
         }
@@ -29,10 +29,10 @@ namespace VinewoodCC
             }
             return 0;
         }
-        public override void ILGenerate(LinkedList<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable)
+        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable)
         {
-            ILProgram.AddLast(new QuadTuple(ILOperator.DataBegin, null, null, null));
-            ILProgram.AddLast(new QuadTuple(ILOperator.DataEnd, null, null, null));
+            ILProgram.Add(new QuadTuple(ILOperator.DataBegin, null, null, null));
+            ILProgram.Add(new QuadTuple(ILOperator.DataEnd, null, null, null));
             foreach (var i in Items)
             {
                 i.ILGenerate(ILProgram, null);
@@ -92,19 +92,32 @@ namespace VinewoodCC
             }
             return 0;
         }
-        public override void ILGenerate(LinkedList<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable)
+        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable)
         {
             ZipBackTable = new Dictionary<string, int>();
             var funcName = ((Declarator as ASTFunctionDeclarator).Declarator as ASTVariableDeclarator).Identifier.Value;
             var fHead = new ILIdentifier(funcName, ILNameType.Function, null);
-            ILProgram.AddLast(new QuadTuple(ILOperator.ProcBegin, null, null, fHead));
+            ILProgram.Add(new QuadTuple(ILOperator.ProcBegin, null, null, fHead));
             //params
-
+            var param = (Declarator as ASTFunctionDeclarator)?.Parameters;
+            if (param is not null)
+            {
+                foreach (var i in param)
+                {
+                    var arg = (i.Declarator as ASTVariableDeclarator).Identifier.Value;
+                    var Typename = i.Specfiers[0].Value;
+                    ILProgram.Add(new QuadTuple(ILOperator.Param, null, null,
+                        new ILIdentifier(arg, ILNameType.Var, Typename)));
+                }
+            }
             var fStart = ILProgram.Count - 1;
             //body
-
+            foreach (var i in Body.BlockItems)
+            {
+                i.ILGenerate(ILProgram, ZipBackTable);
+            }
             ILProgram.ZipBack(ZipBackTable, fStart);
-            ILProgram.AddLast(new QuadTuple(ILOperator.ProcEnd, null, null, fHead));
+            ILProgram.Add(new QuadTuple(ILOperator.ProcEnd, null, null, fHead));
         }
     }
     public partial class ASTDeclaration : ASTNode

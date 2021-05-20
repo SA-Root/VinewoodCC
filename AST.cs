@@ -108,7 +108,7 @@ namespace VinewoodCC
         [JsonProperty(Order = 4, PropertyName = "body")]
         public ASTCompoundStatement Body { get; set; }
         [JsonIgnore]
-        public Dictionary<string, STItem> LocalSymbolTable { get; set; }
+        private Dictionary<string, STItem> LocalSymbolTable { get; set; }
         public ASTFunctionDefine() : base("FunctionDefine")
         {
             Specifiers = new List<ASTToken>();
