@@ -49,9 +49,9 @@ namespace VinewoodCC
         {
             return 0;
         }
-        public virtual void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> EntryPointDictionary)
+        public virtual void ILGenerate(LinkedList<QuadTuple> ILProgram)
         {
-            
+
         }
     }
     public class ASTCompilationUnit : ASTNode

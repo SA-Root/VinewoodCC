@@ -6,7 +6,11 @@ namespace VinewoodCC
     {
         Var = 0,
         TmpVar = 1,
-        Function = 2
+        Function = 2,
+        StringConstant = 3,
+        CharConstant = 4,
+        IntegerConstant = 5,
+        FPConstant = 6
     }
     public enum ILOperator
     {
@@ -18,7 +22,8 @@ namespace VinewoodCC
         Call = 5,
         Jmp = 6,
         Je = 7,
-        Jne = 8
+        Jne = 8,
+        Param = 9
     }
     public struct ILIdentifier
     {
@@ -27,9 +32,9 @@ namespace VinewoodCC
     }
     public class QuadTuple
     {
-        ILOperator Operator { get; set; }
-        ILIdentifier RValueA { get; set; }
-        ILIdentifier RValueB { get; set; }
-        ILIdentifier LValue { get; set; }
+        public ILOperator Operator { get; set; }
+        public ILIdentifier RValueA { get; set; }
+        public ILIdentifier RValueB { get; set; }
+        public ILIdentifier LValue { get; set; }
     }
 }
