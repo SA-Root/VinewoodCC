@@ -16,7 +16,7 @@ namespace VinewoodCC
             SC.run(PS.OutputFile);
             // if (Semantica.HasError != 0) return;
             var IRG = new ILGenerator();
-            IRG.run(PS.OutputFile);
+            IRG.run(PS.OutputFile, false);
         }
         public static void Main(string[] args)
         {

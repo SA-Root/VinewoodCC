@@ -33,7 +33,7 @@ namespace VinewoodCC
             }
             return 0;
         }
-        private void GenerateIR()
+        private void GenerateIR(bool OutputQuadTuple)
         {
             ILProgram = new List<QuadTuple>();
             PostfixCache = new List<QuadTuple>();
@@ -58,13 +58,13 @@ namespace VinewoodCC
                 Console.WriteLine($"Could not write file: {OutputFile}");
             }
         }
-        public void run(string arg)
+        public void run(string arg, bool OutputQuadTuple)
         {
             var start = DateTime.Now;
             Console.WriteLine($"Reading \"{arg}\"...");
             if (LoadAST(arg) != 0) return;
             Console.WriteLine("Generating IR...");
-            GenerateIR();
+            GenerateIR(OutputQuadTuple);
             var end = DateTime.Now;
             Console.WriteLine($"Done in {(end - start).TotalMilliseconds}ms.");
         }
