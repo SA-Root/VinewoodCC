@@ -114,7 +114,7 @@ namespace VinewoodCC
             //body
             foreach (var i in Body.BlockItems)
             {
-                i.ILGenerate(ILProgram, ZipBackTable, null);
+                (i as ASTExpressionStatement)?.Expressions[0].ILGenerate(ILProgram, ZipBackTable, null);
             }
             ILProgram.ZipBack(ZipBackTable, fStart);
             ILProgram.Add(new QuadTuple(ILOperator.ProcEnd, null, null, fHead));
@@ -292,53 +292,99 @@ namespace VinewoodCC
         public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
         {
             var op = Operator.Value;
-            if (op == "'='")
+            var expr = new QuadTuple();
+            if (op == "=")
             {
-
+                if (Expr2 is ASTIdentifier id2)
+                {
+                    var rvalue = id2.Value;
+                    expr.RValueA = new ILIdentifier(rvalue, ILNameType.Var, null);
+                }
+                else if (Expr2 is ASTConstant cc)
+                {
+                    ILProgramExtension.InjectConstant(expr, cc, true);
+                }
+                else
+                {
+                    Expr2.ILGenerate(ILProgram, ZipBackTable, null);
+                    expr.RValueA = ILProgram.Last().LValue;
+                }
+                if (Expr1 is ASTIdentifier id)
+                {
+                    expr.Operator = ILOperator.Assign;
+                    expr.LValue = new ILIdentifier(id.Value, ILNameType.Var, null);
+                }
+                else if (Expr1 is ASTArrayAccess aa)
+                {
+                    Expr1.ILGenerate(ILProgram, ZipBackTable, null);
+                    expr.Operator = ILOperator.ArrayAssign;
+                    expr.LValue = ILProgram.Last().LValue;
+                }
+                ILProgram.Add(expr);
             }
-            else if (op == "'+'")
+            else
             {
-
-            }
-            else if (op == "'-'")
-            {
-
-            }
-            else if (op == "'*'")
-            {
-
-            }
-            else if (op == "'/'")
-            {
-
-            }
-            else if (op == "'&&'")
-            {
-
-            }
-            else if (op == "'||'")
-            {
-
-            }
-            else if (op == "'>'")
-            {
-
-            }
-            else if (op == "'<'")
-            {
-
-            }
-            else if (op == "'=='")
-            {
-
-            }
-            else if (op == "'>='")
-            {
-
-            }
-            else if (op == "'<='")
-            {
-
+                if (op == "+")
+                {
+                    expr.Operator = ILOperator.Add;
+                }
+                else if (op == "-")
+                {
+                    expr.Operator = ILOperator.Subtract;
+                }
+                else if (op == "*")
+                {
+                    expr.Operator = ILOperator.Multiply;
+                }
+                else if (op == "/")
+                {
+                    expr.Operator = ILOperator.Division;
+                }
+                else if (op == ">")
+                {
+                    expr.Operator = ILOperator.Greater;
+                }
+                else if (op == "<")
+                {
+                    expr.Operator = ILOperator.Less;
+                }
+                else if (op == "==")
+                {
+                    expr.Operator = ILOperator.Equal;
+                }
+                else if (op == ">=")
+                {
+                    expr.Operator = ILOperator.GreaterEqual;
+                }
+                else if (op == "<=")
+                {
+                    expr.Operator = ILOperator.LessEqual;
+                }
+                if (Expr2 is ASTIdentifier id2)
+                {
+                    var rvalue = id2.Value;
+                    expr.RValueB = new ILIdentifier(rvalue, ILNameType.Var, null);
+                }
+                else if (Expr2 is ASTConstant cc)
+                {
+                    ILProgramExtension.InjectConstant(expr, cc, true);
+                }
+                else
+                {
+                    Expr2.ILGenerate(ILProgram, ZipBackTable, null);
+                    expr.RValueB = ILProgram.Last().LValue;
+                }
+                if (Expr1 is ASTIdentifier id)
+                {
+                    expr.RValueA = new ILIdentifier(id.Value, ILNameType.Var, null);
+                }
+                else if (Expr1 is ASTArrayAccess aa)
+                {
+                    Expr1.ILGenerate(ILProgram, ZipBackTable, null);
+                    expr.RValueA = ILProgram.Last().LValue;
+                }
+                expr.LValue = new ILIdentifier("Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null);
+                ILProgram.Add(expr);
             }
         }
     }
@@ -363,6 +409,10 @@ namespace VinewoodCC
                 }
             }
             return 0;
+        }
+        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
+        {
+            
         }
     }
     public partial class ASTPostfixExpression : ASTExpression
