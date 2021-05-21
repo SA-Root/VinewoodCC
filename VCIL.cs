@@ -13,7 +13,7 @@ namespace VinewoodCC
                 ILGenerator.PostfixCache.Clear();
             }
         }
-        public static void InjectConstant(QuadTuple qt, ASTConstant constant, bool isRValue)
+        public static void InjectConstant(this QuadTuple qt, ASTConstant constant, bool isRValue)
         {
             if (constant is ASTStringConstant sc)
             {
@@ -108,7 +108,7 @@ namespace VinewoodCC
     {
         ArrayAssign = -3,//writeback to array elements
         Push = -2,//push arg for func call
-        NoInit = -1,//defines var with no initial value(assign '0's)
+        VarDefine = -1,//(local/global) var definition
         Assign = 0,//=
         DataBegin = 1,//.data
         DataEnd = 2,//.code
@@ -139,6 +139,7 @@ namespace VinewoodCC
     {
         public string ID { get; set; }
         public ILNameType ILNameType { get; set; }
+        //addr: target is an address
         public string ValueType { get; set; }
         public ILIdentifier(string id, ILNameType nt, string vt)
         {

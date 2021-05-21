@@ -7,6 +7,8 @@ namespace VinewoodCC
 {
     public class ILGenerator
     {
+        public static Stack<QuadTuple> LoopBreakStack { get; set; }
+        public static Stack<QuadTuple> LoopContinueStack { get; set; }
         public static List<QuadTuple> PostfixCache { get; set; }
         public static int TmpCounter { get; set; }
         private ASTNode Root { get; set; }
@@ -35,6 +37,8 @@ namespace VinewoodCC
         {
             ILProgram = new List<QuadTuple>();
             PostfixCache = new List<QuadTuple>();
+            LoopBreakStack = new Stack<QuadTuple>();
+            LoopContinueStack = new Stack<QuadTuple>();
             TmpCounter = 0;
             Root.ILGenerate(ILProgram, null, null);
             Console.WriteLine("---------------IR Code---------------");
