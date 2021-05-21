@@ -11,6 +11,8 @@ namespace VinewoodCC
     }
     public enum ILOperator
     {
+        Push = -2,//push arg for func call
+        NoInit = -1,//defines var with no initial value(assign '0's)
         Assign = 0,//=
         DataBegin = 1,//.data
         DataEnd = 2,//.code
@@ -24,7 +26,18 @@ namespace VinewoodCC
         Return = 10,//ret
         JmpTarget = 11,//jmp label in asm file
         Add = 12,//+
-        ArrayAccess = 13//tmp=a[i][j]
+        ArrayAccess = 13,//tmp=a[i][j]
+        Subtract = 14,//-
+        Multiply = 15,//*
+        Division = 16,///
+        Greater = 17,//>
+        Less = 18,//<
+        Equal = 19,//==
+        Increase = 20,//++
+        Decrease = 21,//--
+        GreaterEqual = 22,//>=
+        LessEqual = 23,//<=
+        Not = 24//!
     }
     public class ILIdentifier
     {

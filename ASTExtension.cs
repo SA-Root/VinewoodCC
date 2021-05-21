@@ -302,23 +302,43 @@ namespace VinewoodCC
             }
             else if (op == "'-'")
             {
-                
+
             }
             else if (op == "'*'")
             {
-                
+
             }
             else if (op == "'/'")
             {
-                
+
             }
             else if (op == "'&&'")
             {
-                
+
             }
             else if (op == "'||'")
             {
-                
+
+            }
+            else if (op == "'>'")
+            {
+
+            }
+            else if (op == "'<'")
+            {
+
+            }
+            else if (op == "'=='")
+            {
+
+            }
+            else if (op == "'>='")
+            {
+
+            }
+            else if (op == "'<='")
+            {
+
             }
         }
     }
