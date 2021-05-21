@@ -5,6 +5,14 @@ namespace VinewoodCC
 {
     public static class ILProgramExtension
     {
+        public static void MergePostfix(this List<QuadTuple> ILProgram)
+        {
+            if (ILGenerator.PostfixCache.Count > 0)
+            {
+                ILProgram.AddRange(ILGenerator.PostfixCache);
+                ILGenerator.PostfixCache.Clear();
+            }
+        }
         public static void InjectConstant(QuadTuple qt, ASTConstant constant, bool isRValue)
         {
             if (constant is ASTStringConstant sc)

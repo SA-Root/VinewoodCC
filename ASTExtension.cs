@@ -279,6 +279,7 @@ namespace VinewoodCC
             ILProgram.Add(new QuadTuple(ILOperator.ArrayAccess,
                 new ILIdentifier(ArrName, ILNameType.Var, null), ILProgram.Last().LValue,
                 new ILIdentifier("Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "addr")));
+            ILProgram.MergePostfix();
         }
     }
     public partial class ASTBinaryExpression : ASTExpression
@@ -321,6 +322,7 @@ namespace VinewoodCC
                     expr.LValue = ILProgram.Last().LValue;
                 }
                 ILProgram.Add(expr);
+                ILProgram.MergePostfix();
             }
             else
             {
@@ -413,6 +415,7 @@ namespace VinewoodCC
         public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
         {
             
+            ILProgram.MergePostfix();
         }
     }
     public partial class ASTPostfixExpression : ASTExpression

@@ -7,6 +7,7 @@ namespace VinewoodCC
 {
     public class ILGenerator
     {
+        public static List<QuadTuple> PostfixCache { get; set; }
         public static int TmpCounter { get; set; }
         private ASTNode Root { get; set; }
         public string OutputFile { get; set; }
@@ -33,6 +34,7 @@ namespace VinewoodCC
         private void GenerateIR()
         {
             ILProgram = new List<QuadTuple>();
+            PostfixCache = new List<QuadTuple>();
             TmpCounter = 0;
             Root.ILGenerate(ILProgram, null, null);
             Console.WriteLine("---------------IR Code---------------");
