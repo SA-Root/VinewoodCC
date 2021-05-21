@@ -7,6 +7,8 @@ namespace VinewoodCC
 {
     public static class ILProgramExtension
     {
+        public static QuadTuple Last(this List<QuadTuple> ILProgram)
+        => ILProgram[ILProgram.Count - 1];
         public static void PrintToConsole(this List<QuadTuple> ILProgram)
         {
             foreach (var i in ILProgram)
@@ -71,7 +73,7 @@ namespace VinewoodCC
         {
             ILProgram = new List<QuadTuple>();
             TmpCounter = 0;
-            Root.ILGenerate(ILProgram, null);
+            Root.ILGenerate(ILProgram, null, null);
             Console.WriteLine("---------------IR Code---------------");
             ILProgram.PrintToConsole();
             try

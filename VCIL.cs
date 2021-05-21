@@ -22,7 +22,9 @@ namespace VinewoodCC
         Jne = 8,
         Param = 9,// xx:type
         Return = 10,//ret
-        JmpTarget = 11//jmp label in asm file
+        JmpTarget = 11,//jmp label in asm file
+        Add = 12,//+
+        ArrayAccess = 13//tmp=a[i][j]
     }
     public class ILIdentifier
     {
@@ -35,6 +37,7 @@ namespace VinewoodCC
             ILNameType = nt;
             ValueType = vt;
         }
+        public ILIdentifier() { }
     }
     public class QuadTuple
     {
