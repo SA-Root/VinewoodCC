@@ -1,5 +1,4 @@
 ﻿using System;
-using BenchmarkDotNet.Running;
 using System.Collections.Generic;
 
 namespace VinewoodCC
@@ -20,6 +19,11 @@ namespace VinewoodCC
         }
         public static void Main(string[] args)
         {
+            if (args.Length == 0)
+            {
+                Console.WriteLine("[ERROR]No input file.");
+                return;
+            }
             run(args[0]);
             //_ = BenchmarkRunner.Run<Test>();
         }
