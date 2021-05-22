@@ -40,7 +40,7 @@ namespace VinewoodCC
             LoopBreakStack = new Stack<QuadTuple>();
             LoopContinueStack = new Stack<QuadTuple>();
             TmpCounter = 0;
-            Root.ILGenerate(ILProgram, null, null);
+            Root.ILGenerate(ILProgram, null);
             Console.WriteLine("---------------IR Code---------------");
             ILProgram.PrintToConsole();
             try

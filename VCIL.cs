@@ -75,27 +75,6 @@ namespace VinewoodCC
                 Console.Write(")\n");
             }
         }
-        public static void ZipBack(this List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, int offset)
-        {
-            for (int i = offset; i < ILProgram.Count; ++i)
-            {
-                if (ILProgram[i].Operator == ILOperator.JmpTarget)
-                {
-                    var name = ILProgram[i].LValue.ID;
-                    if (ZipBackTable.ContainsKey(name))
-                    {
-                        var j = ZipBackTable[name];
-                        do
-                        {
-                            var next = int.Parse(ILProgram[j].LValue.ID);
-                            ILProgram[j].LValue = ILProgram[i].LValue;
-                            j = next;
-                        } while (ILProgram[j].LValue.ID != "0");
-                        ZipBackTable.Remove(name);
-                    }
-                }
-            }
-        }
     }
     public enum ILNameType
     {

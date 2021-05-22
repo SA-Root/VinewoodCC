@@ -12,7 +12,7 @@ namespace VinewoodCC
         {
             return 0;
         }
-        public virtual void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
+        public virtual void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
         {
 
         }
@@ -29,13 +29,13 @@ namespace VinewoodCC
             }
             return 0;
         }
-        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
         {
             ILProgram.Add(new QuadTuple(ILOperator.DataBegin, null, null, null));
             ILProgram.Add(new QuadTuple(ILOperator.DataEnd, null, null, null));
             foreach (var i in Items)
             {
-                i.ILGenerate(ILProgram, null, null);
+                i.ILGenerate(ILProgram, null);
             }
         }
     }
@@ -92,9 +92,8 @@ namespace VinewoodCC
             }
             return 0;
         }
-        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
         {
-            ZipBackTable = new Dictionary<string, int>();
             var funcName = ((Declarator as ASTFunctionDeclarator).Declarator as ASTVariableDeclarator).Identifier.Value;
             var fHead = new ILIdentifier(funcName, ILNameType.Function, null);
             ILProgram.Add(new QuadTuple(ILOperator.ProcBegin, null, null, fHead));
@@ -114,9 +113,8 @@ namespace VinewoodCC
             //body
             foreach (var i in Body.BlockItems)
             {
-                i.ILGenerate(ILProgram, ZipBackTable, "in-func");
+                i.ILGenerate(ILProgram, "in-func");
             }
-            ILProgram.ZipBack(ZipBackTable, fStart);
             ILProgram.Add(new QuadTuple(ILOperator.ProcEnd, null, null, fHead));
         }
     }
@@ -135,12 +133,12 @@ namespace VinewoodCC
             }
             return 0;
         }
-        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
         {
             var DeclType = Specifiers[0].Value;
             foreach (var i in InitLists)
             {
-                i.ILGenerate(ILProgram, ZipBackTable, DeclType);
+                i.ILGenerate(ILProgram, DeclType);
             }
         }
     }
@@ -232,7 +230,7 @@ namespace VinewoodCC
             }
             return 0;
         }
-        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
         {
             var ArrName = (ArrayName as ASTIdentifier).Value;
             var dim1 = new ILIdentifier();
@@ -249,7 +247,7 @@ namespace VinewoodCC
             }
             else
             {
-                Elements[0].ILGenerate(ILProgram, ZipBackTable, null);
+                Elements[0].ILGenerate(ILProgram, null);
                 dim1 = ILProgram.Last().LValue;
             }
             //2-D array
@@ -270,7 +268,7 @@ namespace VinewoodCC
                 }
                 else
                 {
-                    Elements[1].ILGenerate(ILProgram, ZipBackTable, null);
+                    Elements[1].ILGenerate(ILProgram, null);
                     dim2 = ILProgram.Last().LValue;
                 }
                 ILProgram.Add(new QuadTuple(ILOperator.Add, dim1, dim2,
@@ -292,7 +290,7 @@ namespace VinewoodCC
             Expr2.AOTCheck(GST, LST, earg);
             return 0;
         }
-        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
         {
             var op = Operator.Value;
             var expr = new QuadTuple();
@@ -306,7 +304,7 @@ namespace VinewoodCC
                 }
                 else if (Expr1 is ASTArrayAccess aa)
                 {
-                    Expr1.ILGenerate(ILProgram, ZipBackTable, null);
+                    Expr1.ILGenerate(ILProgram, null);
                     expr.RValueB = ILProgram.Last().LValue;
                 }
                 if (Expr2 is ASTIdentifier id2)
@@ -320,7 +318,7 @@ namespace VinewoodCC
                 }
                 else
                 {
-                    Expr2.ILGenerate(ILProgram, ZipBackTable, null);
+                    Expr2.ILGenerate(ILProgram, null);
                     expr.RValueA = ILProgram.Last().LValue;
                 }
                 ILProgram.Add(expr);
@@ -347,7 +345,7 @@ namespace VinewoodCC
                 }
                 else
                 {
-                    Expr2.ILGenerate(ILProgram, ZipBackTable, null);
+                    Expr2.ILGenerate(ILProgram, null);
                     expr.RValueA = ILProgram.Last().LValue;
                 }
                 if (Expr1 is ASTIdentifier id)
@@ -357,7 +355,7 @@ namespace VinewoodCC
                 }
                 else if (Expr1 is ASTArrayAccess aa)
                 {
-                    Expr1.ILGenerate(ILProgram, ZipBackTable, null);
+                    Expr1.ILGenerate(ILProgram, null);
                     expr.Operator = ILOperator.ArrayAssign;
                     expr.LValue = ILProgram.Last().LValue;
                 }
@@ -413,7 +411,7 @@ namespace VinewoodCC
                 }
                 else
                 {
-                    Expr2.ILGenerate(ILProgram, ZipBackTable, null);
+                    Expr2.ILGenerate(ILProgram, null);
                     expr.RValueB = ILProgram.Last().LValue;
                 }
                 if (Expr1 is ASTIdentifier id)
@@ -422,7 +420,7 @@ namespace VinewoodCC
                 }
                 else if (Expr1 is ASTArrayAccess aa)
                 {
-                    Expr1.ILGenerate(ILProgram, ZipBackTable, null);
+                    Expr1.ILGenerate(ILProgram, null);
                     expr.RValueA = ILProgram.Last().LValue;
                 }
                 expr.LValue = new ILIdentifier("Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null);
@@ -453,7 +451,7 @@ namespace VinewoodCC
             }
             return 0;
         }
-        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
         {
             foreach (var i in ArgList)
             {
@@ -470,14 +468,15 @@ namespace VinewoodCC
                 }
                 else
                 {
-                    i.ILGenerate(ILProgram, ZipBackTable, null);
+                    i.ILGenerate(ILProgram, null);
                     ILProgram.Add(new QuadTuple(ILOperator.Push, null, null,
                         ILProgram.Last().LValue));
                 }
             }
             var fname = (FunctionName as ASTIdentifier).Value;
-            ILProgram.Add(new QuadTuple(ILOperator.Call, null, null,
-                new ILIdentifier(fname, ILNameType.Function, null)));
+            ILProgram.Add(new QuadTuple(ILOperator.Call, new ILIdentifier(fname, ILNameType.Function, null), null,
+                new ILIdentifier("Callback" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null)));
+            ++ILGenerator.TmpCounter;
             ILProgram.MergePostfix();
         }
     }
@@ -495,7 +494,7 @@ namespace VinewoodCC
             }
             return 0;
         }
-        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
         {
             var ocopy = new ILIdentifier("Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null);
             ++ILGenerator.TmpCounter;
@@ -503,7 +502,7 @@ namespace VinewoodCC
             {
                 if (Expression is ASTArrayAccess aa)
                 {
-                    aa.ILGenerate(ILProgram, ZipBackTable, null);
+                    aa.ILGenerate(ILProgram, null);
                     ILGenerator.PostfixCache.Add(new QuadTuple(ILOperator.Decrease, null, null, ILProgram.Last().LValue));
                 }
                 else if (Expression is ASTIdentifier id)
@@ -517,7 +516,7 @@ namespace VinewoodCC
             {
                 if (Expression is ASTArrayAccess aa)
                 {
-                    aa.ILGenerate(ILProgram, ZipBackTable, null);
+                    aa.ILGenerate(ILProgram, null);
                     ILGenerator.PostfixCache.Add(new QuadTuple(ILOperator.Increase, null, null, ILProgram.Last().LValue));
                 }
                 else if (Expression is ASTIdentifier id)
@@ -543,7 +542,7 @@ namespace VinewoodCC
             }
             return 0;
         }
-        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
         {
             var ocopy = new ILIdentifier("Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null);
             ++ILGenerator.TmpCounter;
@@ -551,7 +550,7 @@ namespace VinewoodCC
             {
                 if (Expression is ASTArrayAccess aa)
                 {
-                    aa.ILGenerate(ILProgram, ZipBackTable, null);
+                    aa.ILGenerate(ILProgram, null);
                     ILProgram.Add(new QuadTuple(ILOperator.Not, null, null, ILProgram.Last().LValue));
                 }
                 else if (Expression is ASTIdentifier id)
@@ -564,7 +563,7 @@ namespace VinewoodCC
             {
                 if (Expression is ASTArrayAccess aa)
                 {
-                    aa.ILGenerate(ILProgram, ZipBackTable, null);
+                    aa.ILGenerate(ILProgram, null);
                     ILProgram.Add(new QuadTuple(ILOperator.Decrease, null, null, ILProgram.Last().LValue));
                 }
                 else if (Expression is ASTIdentifier id)
@@ -577,7 +576,7 @@ namespace VinewoodCC
             {
                 if (Expression is ASTArrayAccess aa)
                 {
-                    aa.ILGenerate(ILProgram, ZipBackTable, null);
+                    aa.ILGenerate(ILProgram, null);
                     ILProgram.Add(new QuadTuple(ILOperator.Increase, null, null, ILProgram.Last().LValue));
                 }
                 else if (Expression is ASTIdentifier id)
@@ -622,9 +621,9 @@ namespace VinewoodCC
             }
             return 0;
         }
-        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
         {
-            Expressions[0].ILGenerate(ILProgram, ZipBackTable, DeclarationType);
+            Expressions[0].ILGenerate(ILProgram, DeclarationType);
         }
     }
     public partial class ASTIterationDeclaredStatement : ASTStatement
@@ -648,7 +647,7 @@ namespace VinewoodCC
             earg.Loops.RemoveLast();
             return 0;
         }
-        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
         {
             var jmpCond = new QuadTuple(ILOperator.JmpTarget, null, null,
                 new ILIdentifier("Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
@@ -663,25 +662,43 @@ namespace VinewoodCC
             ILGenerator.LoopContinueStack.Push(jmpStep);
             if (Initilize is not null)
             {
-                Initilize.ILGenerate(ILProgram, ZipBackTable, "loop");
+                Initilize.ILGenerate(ILProgram, "loop");
             }
             ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpCond.LValue));
             ILProgram.Add(jmpStep);
             if (Step is not null)
             {
-                Step[0].ILGenerate(ILProgram, ZipBackTable, null);
+                Step[0].ILGenerate(ILProgram, null);
             }
             ILProgram.Add(jmpCond);
             if (Condition is not null)
             {
-                Condition[0].ILGenerate(ILProgram, ZipBackTable, null);
-                ILProgram.Add(new QuadTuple(ILOperator.Je,
-                    new ILIdentifier("0", ILNameType.Constant, "int"), null, ILProgram.Last().LValue));
+                if (Condition[0] is ASTBinaryExpression be)
+                {
+                    be.Expr1.ILGenerate(ILProgram, null);
+                    if (be.Operator.Value == "&&")
+                    {
+                        ILProgram.Add(new QuadTuple(ILOperator.Jne,
+                            new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                    }
+                    else
+                    {
+                        ILProgram.Add(new QuadTuple(ILOperator.Je,
+                            new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                    }
+                    be.Expr2.ILGenerate(ILProgram, null);
+                }
+                else
+                {
+                    Condition[0].ILGenerate(ILProgram, null);
+                    ILProgram.Add(new QuadTuple(ILOperator.Je,
+                        new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                }
             }
             var body = (Stat as ASTCompoundStatement).BlockItems;
             foreach (var i in body)
             {
-                i.ILGenerate(ILProgram, ZipBackTable, "loop");
+                i.ILGenerate(ILProgram, "loop");
             }
             ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpStep.LValue));
             ILProgram.Add(jmpEnd);
@@ -710,7 +727,7 @@ namespace VinewoodCC
             earg.Loops.RemoveLast();
             return 0;
         }
-        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
         {
             var jmpCond = new QuadTuple(ILOperator.JmpTarget, null, null,
                 new ILIdentifier("Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
@@ -725,25 +742,43 @@ namespace VinewoodCC
             ILGenerator.LoopContinueStack.Push(jmpStep);
             if (Initilize is not null)
             {
-                Initilize[0].ILGenerate(ILProgram, ZipBackTable, "loop");
+                Initilize[0].ILGenerate(ILProgram, "loop");
             }
             ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpCond.LValue));
             ILProgram.Add(jmpStep);
             if (Step is not null)
             {
-                Step[0].ILGenerate(ILProgram, ZipBackTable, null);
+                Step[0].ILGenerate(ILProgram, null);
             }
             ILProgram.Add(jmpCond);
             if (Condition is not null)
             {
-                Condition[0].ILGenerate(ILProgram, ZipBackTable, null);
-                ILProgram.Add(new QuadTuple(ILOperator.Je,
-                    new ILIdentifier("0", ILNameType.Constant, "int"), null, ILProgram.Last().LValue));
+                if (Condition[0] is ASTBinaryExpression be)
+                {
+                    be.Expr1.ILGenerate(ILProgram, null);
+                    if (be.Operator.Value == "&&")
+                    {
+                        ILProgram.Add(new QuadTuple(ILOperator.Jne,
+                            new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                    }
+                    else
+                    {
+                        ILProgram.Add(new QuadTuple(ILOperator.Je,
+                            new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                    }
+                    be.Expr2.ILGenerate(ILProgram, null);
+                }
+                else
+                {
+                    Condition[0].ILGenerate(ILProgram, null);
+                    ILProgram.Add(new QuadTuple(ILOperator.Je,
+                        new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                }
             }
             var body = (Stat as ASTCompoundStatement).BlockItems;
             foreach (var i in body)
             {
-                i.ILGenerate(ILProgram, ZipBackTable, "loop");
+                i.ILGenerate(ILProgram, "loop");
             }
             ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpStep.LValue));
             ILProgram.Add(jmpEnd);
@@ -760,9 +795,64 @@ namespace VinewoodCC
             Otherwise?.AOTCheck(GST, LST, earg);
             return 0;
         }
-        public override void ILGenerate(List<QuadTuple> ILProgram, Dictionary<string, int> ZipBackTable, string DeclarationType)
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
         {
-            
+            var jmpEnd = new QuadTuple(ILOperator.JmpTarget, null, null, new ILIdentifier("Select" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
+            ++ILGenerator.TmpCounter;
+            if (Condition is not null)
+            {
+                if (Condition[0] is ASTBinaryExpression be)
+                {
+                    be.Expr1.ILGenerate(ILProgram, null);
+                    if (be.Operator.Value == "&&")
+                    {
+                        ILProgram.Add(new QuadTuple(ILOperator.Jne,
+                            new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                    }
+                    else
+                    {
+                        ILProgram.Add(new QuadTuple(ILOperator.Je,
+                            new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                    }
+                    if (be.Expr2 is ASTIdentifier id)
+                    {
+
+                    }
+                    else
+                    {
+                        be.Expr2.ILGenerate(ILProgram, null);
+                    }
+                }
+                else
+                {
+                    if (Condition[0] is ASTIdentifier id)
+                    {
+                        ILProgram.Add(new QuadTuple(ILOperator.Je,
+                            new ILIdentifier("0", ILNameType.Constant, "int"),
+                            new ILIdentifier(id.Value, ILNameType.Var, null), jmpEnd.LValue));
+                    }
+                    else
+                    {
+                        Condition[0].ILGenerate(ILProgram, null);
+                        ILProgram.Add(new QuadTuple(ILOperator.Je,
+                            new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                    }
+                }
+            }
+            var body = (Then as ASTCompoundStatement).BlockItems;
+            foreach (var i in body)
+            {
+                i.ILGenerate(ILProgram, "selection");
+            }
+            var other = (Otherwise as ASTCompoundStatement)?.BlockItems;
+            if (other is not null)
+            {
+                foreach (var i in other)
+                {
+                    i.ILGenerate(ILProgram, "selection");
+                }
+            }
+            ILProgram.Add(jmpEnd);
         }
     }
     public partial class ASTArrayDeclarator : ASTDeclarator
