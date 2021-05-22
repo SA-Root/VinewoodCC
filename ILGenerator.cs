@@ -43,20 +43,7 @@ namespace VinewoodCC
             Root.ILGenerate(ILProgram, null);
             Console.WriteLine("---------------IR Code---------------");
             ILProgram.PrintToConsole();
-            try
-            {
-                var stream = new FileStream(OutputFile, FileMode.Create, FileAccess.Write);
-                using (var writer = new StreamWriter(stream))
-                {
-                    var jsonIR = JsonConvert.SerializeObject(ILProgram, Formatting.Indented);
-                    writer.Write(jsonIR);
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.StackTrace);
-                Console.WriteLine($"Could not write file: {OutputFile}");
-            }
+            ILProgram.OutputQuadTuple(OutputFile);
         }
         public void run(string arg, bool OutputQuadTuple)
         {

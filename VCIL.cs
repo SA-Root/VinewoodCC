@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using Newtonsoft.Json;
 
 namespace VinewoodCC
 {
@@ -73,6 +75,48 @@ namespace VinewoodCC
                 Console.Write(",");
                 if (i.LValue is not null) Console.Write(i.LValue.ID);
                 Console.Write(")\n");
+            }
+        }
+        public static void OutputQuadTuple(this List<QuadTuple> ILProgram, string path)
+        {
+            try
+            {
+                var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
+                using (var writer = new StreamWriter(stream))
+                {
+                    foreach (var i in ILProgram)
+                    {
+                        writer.Write("({0},", i.Operator);
+                        if (i.RValueA is not null) writer.Write(i.RValueA.ID);
+                        writer.Write(",");
+                        if (i.RValueB is not null) writer.Write(i.RValueB.ID);
+                        writer.Write(",");
+                        if (i.LValue is not null) writer.Write(i.LValue.ID);
+                        writer.Write(")\n");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                Console.WriteLine($"Could not write file: {path}");
+            }
+        }
+        public static void OutputJson(this List<QuadTuple> ILProgram, string path)
+        {
+            try
+            {
+                var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
+                using (var writer = new StreamWriter(stream))
+                {
+                    var jsonIR = JsonConvert.SerializeObject(ILProgram, Formatting.Indented);
+                    writer.Write(jsonIR);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                Console.WriteLine($"Could not write file: {path}");
             }
         }
     }
