@@ -81,10 +81,12 @@ namespace VinewoodCC
         Var = 0,
         TmpVar = 1,
         Function = 2,
-        Constant = 3
+        Constant = 3,
+        Array = 4
     }
     public enum ILOperator
     {
+        ArrayDefine = -4,
         ArrayAssign = -3,//writeback to array elements
         Push = -2,//push arg for func call
         VarDefine = -1,//(local/global) var definition

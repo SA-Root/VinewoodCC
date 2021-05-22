@@ -35,7 +35,7 @@ namespace VinewoodCC
             ILProgram.Add(new QuadTuple(ILOperator.DataEnd, null, null, null));
             foreach (var i in Items)
             {
-                i.ILGenerate(ILProgram, null);
+                i.ILGenerate(ILProgram, "global");
             }
         }
     }
@@ -138,7 +138,38 @@ namespace VinewoodCC
             var DeclType = Specifiers[0].Value;
             foreach (var i in InitLists)
             {
-                i.ILGenerate(ILProgram, DeclType);
+                i.Declarator.ILGenerate(ILProgram, DeclType);
+                if (DeclarationType == "global")
+                {
+                    var last = ILProgram.Last();
+                    ILProgram.Remove(ILProgram.Last());
+                    ILProgram.Insert(1, last);
+                    if (i.Expressions.Count > 0)
+                    {
+                        var qt = new QuadTuple(ILOperator.Assign, null, null, ILProgram[1].LValue);
+                        qt.InjectConstant(i.Expressions[0] as ASTConstant, true);
+                        ILProgram.Insert(2, qt);
+                    }
+                }
+                else
+                {
+                    var newvar = ILProgram.Last().LValue;
+                    if (i.Expressions.Count > 0)
+                    {
+                        if (i.Expressions[0] is ASTConstant cst)
+                        {
+                            var qt = new QuadTuple(ILOperator.Assign, null, null, newvar);
+                            qt.InjectConstant(i.Expressions[0] as ASTConstant, true);
+                            ILProgram.Add(qt);
+                        }
+                        else
+                        {
+                            i.Expressions[0].ILGenerate(ILProgram, null);
+                            var qt = new QuadTuple(ILOperator.Assign, ILProgram.Last().LValue, null, newvar);
+                            ILProgram.Add(qt);
+                        }
+                    }
+                }
             }
         }
     }
@@ -186,6 +217,14 @@ namespace VinewoodCC
                 }
             }
             return 0;
+        }
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+        {
+            var tmpcopy = new QuadTuple(ILOperator.Assign,
+                new ILIdentifier(Value, ILNameType.Var, null), null,
+                new ILIdentifier("Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
+            ++ILGenerator.TmpCounter;
+            ILProgram.Add(tmpcopy);
         }
     }
     public partial class ASTArrayAccess : ASTExpression
@@ -551,12 +590,16 @@ namespace VinewoodCC
                 if (Expression is ASTArrayAccess aa)
                 {
                     aa.ILGenerate(ILProgram, null);
-                    ILProgram.Add(new QuadTuple(ILOperator.Not, null, null, ILProgram.Last().LValue));
+                    ILProgram.Add(new QuadTuple(ILOperator.Not, ILProgram.Last().LValue, null,
+                        new ILIdentifier("Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null)));
+                    ++ILGenerator.TmpCounter;
                 }
                 else if (Expression is ASTIdentifier id)
                 {
                     var original = new ILIdentifier(id.Value, ILNameType.Var, null);
-                    ILProgram.Add(new QuadTuple(ILOperator.Not, null, null, original));
+                    ILProgram.Add(new QuadTuple(ILOperator.Not, original, null,
+                        new ILIdentifier("Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null)));
+                    ++ILGenerator.TmpCounter;
                 }
             }
             else if (Operator.Value == "--")
@@ -598,6 +641,10 @@ namespace VinewoodCC
             }
             return 0;
         }
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+        {
+            ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, ILGenerator.LoopBreakStack.Peek().LValue));
+        }
     }
     public partial class ASTContinueStatement : ASTStatement
     {
@@ -609,6 +656,40 @@ namespace VinewoodCC
                 Semantica.HasError = 1;
             }
             return 0;
+        }
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+        {
+            ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, ILGenerator.LoopContinueStack.Peek().LValue));
+        }
+    }
+    public partial class ASTReturnStatement : ASTStatement
+    {
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+        {
+            if (Expression is not null)
+            {
+                if (Expression[0] is ASTIdentifier id)
+                {
+                    ILProgram.Add(new QuadTuple(ILOperator.Return, null, null,
+                        new ILIdentifier(id.Value, ILNameType.Var, null)));
+                }
+                else if (Expression[0] is ASTConstant cst)
+                {
+                    var ret = new QuadTuple(ILOperator.Return, null, null,
+                        null);
+                    ret.InjectConstant(cst, false);
+                    ILProgram.Add(ret);
+                }
+                else
+                {
+                    Expression[0].ILGenerate(ILProgram, null);
+                    ILProgram.Add(new QuadTuple(ILOperator.Return, null, null, ILProgram.Last().LValue));
+                }
+            }
+            else
+            {
+                ILProgram.Add(new QuadTuple(ILOperator.Return, null, null, null));
+            }
         }
     }
     public partial class ASTExpressionStatement : ASTStatement
@@ -675,18 +756,26 @@ namespace VinewoodCC
             {
                 if (Condition[0] is ASTBinaryExpression be)
                 {
-                    be.Expr1.ILGenerate(ILProgram, null);
                     if (be.Operator.Value == "&&")
                     {
+                        be.Expr1.ILGenerate(ILProgram, null);
                         ILProgram.Add(new QuadTuple(ILOperator.Jne,
                             new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                        be.Expr2.ILGenerate(ILProgram, null);
+                    }
+                    else if (be.Operator.Value == "||")
+                    {
+                        be.Expr1.ILGenerate(ILProgram, null);
+                        ILProgram.Add(new QuadTuple(ILOperator.Je,
+                            new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                        be.Expr2.ILGenerate(ILProgram, null);
                     }
                     else
                     {
+                        be.ILGenerate(ILProgram, null);
                         ILProgram.Add(new QuadTuple(ILOperator.Je,
                             new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
                     }
-                    be.Expr2.ILGenerate(ILProgram, null);
                 }
                 else
                 {
@@ -755,18 +844,26 @@ namespace VinewoodCC
             {
                 if (Condition[0] is ASTBinaryExpression be)
                 {
-                    be.Expr1.ILGenerate(ILProgram, null);
                     if (be.Operator.Value == "&&")
                     {
+                        be.Expr1.ILGenerate(ILProgram, null);
                         ILProgram.Add(new QuadTuple(ILOperator.Jne,
                             new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                        be.Expr2.ILGenerate(ILProgram, null);
+                    }
+                    else if (be.Operator.Value == "||")
+                    {
+                        be.Expr1.ILGenerate(ILProgram, null);
+                        ILProgram.Add(new QuadTuple(ILOperator.Je,
+                            new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                        be.Expr2.ILGenerate(ILProgram, null);
                     }
                     else
                     {
+                        be.ILGenerate(ILProgram, null);
                         ILProgram.Add(new QuadTuple(ILOperator.Je,
                             new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
                     }
-                    be.Expr2.ILGenerate(ILProgram, null);
                 }
                 else
                 {
@@ -799,28 +896,68 @@ namespace VinewoodCC
         {
             var jmpEnd = new QuadTuple(ILOperator.JmpTarget, null, null, new ILIdentifier("Select" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
             ++ILGenerator.TmpCounter;
+            var jmpThen = new QuadTuple(ILOperator.JmpTarget, null, null, new ILIdentifier("Select" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
+            ++ILGenerator.TmpCounter;
             if (Condition is not null)
             {
                 if (Condition[0] is ASTBinaryExpression be)
                 {
-                    be.Expr1.ILGenerate(ILProgram, null);
-                    if (be.Operator.Value == "&&")
+                    if (be.Expr1 is ASTIdentifier id)
                     {
-                        ILProgram.Add(new QuadTuple(ILOperator.Jne,
-                            new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                        var e1 = new ILIdentifier(id.Value, ILNameType.Var, null);
+                        if (be.Operator.Value == "&&")
+                        {
+                            ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                new ILIdentifier("0", ILNameType.Constant, "int"), e1, jmpThen.LValue));
+                        }
+                        else
+                        {
+                            ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                new ILIdentifier("1", ILNameType.Constant, "int"), e1, jmpThen.LValue));
+                        }
                     }
                     else
                     {
-                        ILProgram.Add(new QuadTuple(ILOperator.Je,
-                            new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                        be.Expr1.ILGenerate(ILProgram, null);
+                        if (be.Operator.Value == "&&")
+                        {
+                            ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpThen.LValue));
+                        }
+                        else
+                        {
+                            ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                new ILIdentifier("1", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpThen.LValue));
+                        }
                     }
-                    if (be.Expr2 is ASTIdentifier id)
+                    if (be.Expr2 is ASTIdentifier id2)
                     {
-
+                        var e2 = new ILIdentifier(id2.Value, ILNameType.Var, null);
+                        if (be.Operator.Value == "&&")
+                        {
+                            ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                new ILIdentifier("0", ILNameType.Constant, "int"), e2, jmpThen.LValue));
+                        }
+                        else
+                        {
+                            ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                new ILIdentifier("1", ILNameType.Constant, "int"), e2, jmpThen.LValue));
+                        }
                     }
                     else
                     {
                         be.Expr2.ILGenerate(ILProgram, null);
+                        if (be.Operator.Value == "&&")
+                        {
+                            ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                        }
+                        else
+                        {
+                            ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                            ILProgram.Add(jmpThen);
+                        }
                     }
                 }
                 else
@@ -839,20 +976,21 @@ namespace VinewoodCC
                     }
                 }
             }
-            var body = (Then as ASTCompoundStatement).BlockItems;
-            foreach (var i in body)
-            {
-                i.ILGenerate(ILProgram, "selection");
-            }
-            var other = (Otherwise as ASTCompoundStatement)?.BlockItems;
-            if (other is not null)
-            {
-                foreach (var i in other)
-                {
-                    i.ILGenerate(ILProgram, "selection");
-                }
-            }
+            Then?.ILGenerate(ILProgram, "selection");
+            ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpEnd.LValue));
+            ILProgram.Add(jmpThen);
+            Otherwise?.ILGenerate(ILProgram, "selection");
             ILProgram.Add(jmpEnd);
+        }
+    }
+    public partial class ASTCompoundStatement : ASTStatement
+    {
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+        {
+            foreach (var i in BlockItems)
+            {
+                i.ILGenerate(ILProgram, null);
+            }
         }
     }
     public partial class ASTArrayDeclarator : ASTDeclarator
@@ -927,6 +1065,32 @@ namespace VinewoodCC
             }
             return 0;
         }
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+        {
+            var len = (Expression as ASTIntegerConstant).Value;
+            var name = "";
+            if (Declarator is ASTArrayDeclarator ad)
+            {
+                len *= (ad.Expression as ASTIntegerConstant).Value;
+                name = (ad.Declarator as ASTVariableDeclarator).Identifier.Value;
+            }
+            else
+            {
+                name = (Declarator as ASTVariableDeclarator).Identifier.Value;
+            }
+            if (DeclarationType == "global")
+            {
+                ILProgram.Insert(1, new QuadTuple(ILOperator.ArrayDefine,
+                    new ILIdentifier(len.ToString(), ILNameType.Constant, "int"), null,
+                    new ILIdentifier(name, ILNameType.Array, DeclarationType)));
+            }
+            else
+            {
+                ILProgram.Add(new QuadTuple(ILOperator.ArrayDefine,
+                    new ILIdentifier(len.ToString(), ILNameType.Constant, "int"), null,
+                    new ILIdentifier(name, ILNameType.Array, DeclarationType)));
+            }
+        }
     }
     public partial class ASTVariableDeclarator : ASTDeclarator
     {
@@ -973,6 +1137,20 @@ namespace VinewoodCC
                 }
             }
             return 0;
+        }
+        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+        {
+            var name = Identifier.Value;
+            var qt = new QuadTuple(ILOperator.VarDefine, null, null,
+                new ILIdentifier(name, ILNameType.Var, DeclarationType));
+            if (DeclarationType == "global")
+            {
+                ILProgram.Insert(1, qt);
+            }
+            else
+            {
+                ILProgram.Add(qt);
+            }
         }
     }
     public partial class ASTFunctionDeclarator : ASTDeclarator
