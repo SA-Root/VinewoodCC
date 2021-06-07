@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 using VinewoodCC.ILGen;
 
@@ -8,21 +9,81 @@ namespace VinewoodCC
     {
         class NativeCodeGenenrator
         {
+            private bool isLocal { get; set; }
+            private Dictionary<string, string> GSymbols { get; set; } = new Dictionary<string, string>();
+            private Dictionary<string, string> LSymbols { get; set; } = new Dictionary<string, string>();
             private List<string> DataSegment { get; set; } = new List<string>();
             private List<string> CodeSegment { get; set; } = new List<string>();
+            private List<string> ProcSegment { get; set; }
             private List<string> AssemblyCode { get; set; } = new List<string>();
             private List<QuadTuple> ILCode { get; set; }
+            private string OutputFile { get; set; }
             public NativeCodeGenenrator(List<QuadTuple> ilc)
             {
                 ILCode = ilc;
+                isLocal = false;
             }
             private void ILArrayDefine(QuadTuple qt)
             {
-
+                var tplt = "{0} {1} {2} DUP({3})";
+                var tplt_local = "local {0}[{1}]:{2}";
+                var vtype = qt.LValue.ValueType;
+                var len = int.Parse(qt.RValueA.ID);
+                if (vtype == "int")
+                {
+                    if (isLocal)
+                    {
+                        LSymbols[qt.LValue.ID] = qt.LValue.ValueType;
+                        ProcSegment.Add(string.Format(tplt_local, qt.LValue.ID, len, "dword"));
+                    }
+                    else
+                    {
+                        GSymbols[qt.LValue.ID] = qt.LValue.ValueType;
+                        DataSegment.Add(string.Format(tplt, qt.LValue.ID, "dword", len, 0));
+                    }
+                }
             }
             private void ILArrayAssign(QuadTuple qt)
             {
-
+                var tplt1 = "mov eax,{0}";
+                var offset = qt.RValueA.ID;
+                if (qt.RValueA.ValueType == "addr")
+                {
+                    if (LSymbols.ContainsKey(offset))
+                    {
+                        if (LSymbols[offset] == "addr")
+                        {
+                            ProcSegment.Add(string.Format(tplt1, "dword ptr " + offset));
+                        }
+                    }
+                    else
+                    {
+                        if (GSymbols[offset] == "addr")
+                        {
+                            ProcSegment.Add(string.Format(tplt1, "dword ptr " + offset));
+                        }
+                    }
+                }
+                else
+                {
+                    ProcSegment.Add(string.Format(tplt1, offset));
+                }
+                var tplt2 = "mov {0},eax";
+                offset = qt.LValue.ID;
+                if (LSymbols.ContainsKey(offset))
+                {
+                    if (LSymbols[offset] == "addr")
+                    {
+                        ProcSegment.Add(string.Format(tplt2, "dword ptr " + offset));
+                    }
+                }
+                else
+                {
+                    if (GSymbols[offset] == "addr")
+                    {
+                        ProcSegment.Add(string.Format(tplt2, "dword ptr " + offset));
+                    }
+                }
             }
             private void ILPush(QuadTuple qt)
             {
@@ -38,7 +99,7 @@ namespace VinewoodCC
             }
             private void ILDataBegin(QuadTuple qt)
             {
-
+                DataSegment.Add(".data");
             }
             private void ILDataEnd(QuadTuple qt)
             {
@@ -46,11 +107,13 @@ namespace VinewoodCC
             }
             private void ILProcBegin(QuadTuple qt)
             {
-
+                var tplt = "{0} proc stdcall";
+                CodeSegment.Add(string.Format(tplt, qt.LValue.ID));
             }
             private void ILProcEnd(QuadTuple qt)
             {
-
+                var tplt = "{0} endp";
+                CodeSegment.Add(string.Format(tplt, qt.LValue.ID));
             }
             private void ILCall(QuadTuple qt)
             {
@@ -87,7 +150,33 @@ namespace VinewoodCC
             }
             private void ILArrayAccess(QuadTuple qt)
             {
-
+                var tplt1 = "mov eax,{0}";
+                ProcSegment.Add(string.Format(tplt1, qt.RValueB.ID));
+                var tplt2 = "mov {0},[{1}+{2}*eax]";
+                var arrName = qt.RValueA.ID;
+                var target = qt.LValue.ID;
+                if (!LSymbols.ContainsKey(target) && !GSymbols.ContainsKey(target))
+                {
+                    if (qt.LValue.ValueType == "int" || qt.LValue.ValueType == "addr")
+                    {
+                        LSymbols[target] = qt.LValue.ValueType;
+                        ProcSegment.Insert(0, string.Format("local {0}:dword", target));
+                    }
+                }
+                if (LSymbols.ContainsKey(arrName))
+                {
+                    if (LSymbols[arrName] == "int" || LSymbols[arrName] == "addr")
+                    {
+                        ProcSegment.Add(string.Format(tplt2, target, arrName, 4));
+                    }
+                }
+                else
+                {
+                    if (GSymbols[arrName] == "int" || LSymbols[arrName] == "addr")
+                    {
+                        ProcSegment.Add(string.Format(tplt2, target, arrName, 4));
+                    }
+                }
             }
             private void ILSubtract(QuadTuple qt)
             {
@@ -141,8 +230,13 @@ namespace VinewoodCC
             {
 
             }
-            public void Run()
+            public void Run(string path)
             {
+                Console.WriteLine("Generating Asssembly....");
+                AssemblyCode.Add(".model flat,stdcall");
+                AssemblyCode.Add("option casemap:none");
+                AssemblyCode.Add("include msvcrt.inc");
+                AssemblyCode.Add("includelib msvcrt.lib");
                 foreach (var item in ILCode)
                 {
                     switch (item.Operator)
@@ -220,9 +314,14 @@ namespace VinewoodCC
                             ILParam(item);
                             break;
                         case ILOperator.ProcBegin:
+                            LSymbols = new Dictionary<string, string>();
+                            isLocal = true;
                             ILProcBegin(item);
+                            ProcSegment = new List<string>();
                             break;
                         case ILOperator.ProcEnd:
+                            isLocal = false;
+                            CodeSegment.AddRange(ProcSegment);
                             ILProcEnd(item);
                             break;
                         case ILOperator.Push:
@@ -243,6 +342,30 @@ namespace VinewoodCC
                         default:
                             break;
                     }
+                }
+                AssemblyCode.AddRange(DataSegment);
+                AssemblyCode.AddRange(CodeSegment);
+                AssemblyCode.Add("end main");
+                WriteToFile(path);
+            }
+            private void WriteToFile(string path)
+            {
+                OutputFile = path.Substring(0, path.LastIndexOf(".vcil")) + ".asm";
+                try
+                {
+                    var stream = new FileStream(OutputFile, FileMode.Create, FileAccess.Write);
+                    using (var writer = new StreamWriter(stream))
+                    {
+                        foreach (var i in AssemblyCode)
+                        {
+                            writer.WriteLine(i);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.StackTrace);
+                    Console.WriteLine($"Could not write file: {OutputFile}");
                 }
             }
         }

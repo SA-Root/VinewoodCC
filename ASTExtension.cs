@@ -1131,7 +1131,6 @@ namespace VinewoodCC
                                     dims.Add(earg.MultiDimArray.Pop());
                                 }
                                 GST.Add(arrName, new STArrayItem(arrName, dims, earg.VType));
-                                Semantica.HasError = 1;
                             }
                         }
                     }

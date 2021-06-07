@@ -23,7 +23,7 @@ namespace VinewoodCC
                 var IRG = new ILGenerator(SC.Root);
                 IRG.Run2(PS.OutputFile);
                 var NCG = new NativeCodeGenenrator(IRG.ILProgram);
-                NCG.Run();
+                NCG.Run(IRG.OutputFile);
             }
             var end = DateTime.Now;
             Console.WriteLine($"Done in {(end - start).TotalMilliseconds}ms.");
