@@ -45,7 +45,7 @@ namespace VinewoodCC
             //ILProgram.PrintToConsole();
             ILProgram.OutputQuadTuple(OutputFile);
         }
-        public void run(string arg, bool OutputQuadTuple)
+        public void Run(string arg, bool OutputQuadTuple)
         {
             var start = DateTime.Now;
             Console.WriteLine($"Reading \"{arg}\"...");
@@ -54,6 +54,16 @@ namespace VinewoodCC
             GenerateIR(OutputQuadTuple);
             var end = DateTime.Now;
             Console.WriteLine($"Done in {(end - start).TotalMilliseconds}ms.");
+        }
+        public void Run2(string arg, bool OutputQuadTuple)
+        {
+            OutputFile = arg.Substring(0, arg.LastIndexOf(".ast.json")) + ".vcil";
+            Console.WriteLine("Generating IR...");
+            GenerateIR(OutputQuadTuple);
+        }
+        public ILGenerator(ASTNode root)
+        {
+            Root = root;
         }
     }
 }

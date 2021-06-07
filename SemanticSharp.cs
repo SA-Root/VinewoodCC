@@ -6,7 +6,7 @@ namespace VinewoodCC
 {
     public class Semantica
     {
-        private ASTNode Root { get; set; }
+        public ASTNode Root { get; set; }
         public static int HasError { get; set; }
         private int LoadAST(string path)
         {
@@ -37,7 +37,7 @@ namespace VinewoodCC
             //无重载
             //函数重定义不检查
         }
-        public void run(string arg)
+        public void Run(string arg)
         {
             var start = DateTime.Now;
             Console.WriteLine($"Reading \"{arg}\"...");
@@ -46,6 +46,12 @@ namespace VinewoodCC
             SemanticCheck();
             var end = DateTime.Now;
             Console.WriteLine($"Done in {(end - start).TotalMilliseconds}ms.");
+        }
+        public void Run2(string arg)
+        {
+            if (LoadAST(arg) != 0) return;
+            Console.WriteLine("Checking AST...");
+            SemanticCheck();
         }
     }
 }

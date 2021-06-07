@@ -55,11 +55,13 @@ namespace VinewoodCC
     public class STArrayItem : STItem
     {
         public List<int> Dimensions { get; set; }
-        public STArrayItem(string id, List<int> dims)
+        public string ValueType { get; set; }
+        public STArrayItem(string id, List<int> dims, string vtype)
         {
             Identifier = id;
             STType = SymbolType.Array;
             Dimensions = dims;
+            ValueType = vtype;
         }
         public STArrayItem() { }
     }

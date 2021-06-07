@@ -66,10 +66,10 @@ namespace ParserSharp
         private void ParseTokens(string path)
         {
             Root = Program();
-            Console.WriteLine("Generating JSON file...");
+            // Console.WriteLine("Generating JSON file...");
             OutputFile = path.Substring(0, path.LastIndexOf(".tokens")) + ".ast.json";
             var jsonString = JsonConvert.SerializeObject(Root, Formatting.Indented);
-            Console.WriteLine($"Writing to \"{OutputFile}\"...");
+            // Console.WriteLine($"Writing to \"{OutputFile}\"...");
             try
             {
                 var stream = new FileStream(OutputFile, FileMode.Create, FileAccess.Write);
@@ -1743,6 +1743,12 @@ namespace ParserSharp
             ParseTokens(arg);
             var end = System.DateTime.Now;
             Console.WriteLine($"Done in {(end - start).TotalMilliseconds}ms.");
+        }
+        public void Run2(string arg)
+        {
+            if (LoadTokens(arg) != 0) return;
+            Console.WriteLine("Generating AST...");
+            ParseTokens(arg);
         }
     }
 }

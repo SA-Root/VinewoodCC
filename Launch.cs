@@ -7,15 +7,21 @@ namespace VinewoodCC
     {
         static void run(string path)
         {
+            var start = DateTime.Now;
             var LS = new LexSharp.Program();
-            LS.Run(path);
+            LS.Run2(path);
             var PS = new ParserSharp.Parser();
-            PS.Run(LS.OutputFile);
+            PS.Run2(LS.OutputFile);
             var SC = new Semantica();
-            SC.run(PS.OutputFile);
-            // if (Semantica.HasError != 0) return;
-            var IRG = new ILGenerator();
-            IRG.run(PS.OutputFile, false);
+            SC.Run2(PS.OutputFile);
+            if (Semantica.HasError == 0)
+            {
+                var IRG = new ILGenerator(SC.Root);
+                IRG.Run2(PS.OutputFile, false);
+                
+            }
+            var end = DateTime.Now;
+            Console.WriteLine($"Done in {(end - start).TotalMilliseconds}ms.");
         }
         public static void Main(string[] args)
         {

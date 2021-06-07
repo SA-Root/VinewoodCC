@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace VinewoodCC
 {
@@ -230,20 +231,22 @@ namespace VinewoodCC
     }
     public partial class ASTArrayAccess : ASTExpression
     {
+        [JsonIgnore]
+        private string VType { get; set; }
         public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
         {
             var id = (ArrayName as ASTIdentifier).Value;
             //local array
             if (LST != null && LST.ContainsKey(id))
             {
-
+                VType = (LST[id] as STArrayItem).ValueType;
             }
             else
             {
                 //global array
                 if (GST.ContainsKey(id))
                 {
-
+                    VType = (GST[id] as STArrayItem).ValueType;
                 }
                 //not defined
                 else
@@ -254,6 +257,7 @@ namespace VinewoodCC
                         if (i.LPT.ContainsKey(id))
                         {
                             defined = true;
+                            VType = (i.LPT[id] as STArrayItem).ValueType;
                             break;
                         }
                     }
@@ -315,14 +319,14 @@ namespace VinewoodCC
                     new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "int")));
                 ++ILGenerator.TmpCounter;
                 ILProgram.Add(new QuadTuple(ILOperator.ArrayAccess,
-                    new ILIdentifier(ArrName, ILNameType.Var, null), ILProgram.Last().LValue,
+                    new ILIdentifier(ArrName, ILNameType.Var, VType), ILProgram.Last().LValue,
                     new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "addr")));
                 ++ILGenerator.TmpCounter;
             }
             else
             {
                 ILProgram.Add(new QuadTuple(ILOperator.ArrayAccess,
-                    new ILIdentifier(ArrName, ILNameType.Var, null), dim1,
+                    new ILIdentifier(ArrName, ILNameType.Var, VType), dim1,
                     new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "addr")));
                 ++ILGenerator.TmpCounter;
             }
@@ -485,20 +489,27 @@ namespace VinewoodCC
         public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
         {
             var fname = (FunctionName as ASTIdentifier).Value;
-            //func not defined
-            if (!GST.ContainsKey(fname))
+            if (fname != "printf" && fname != "scanf")
             {
-                Console.WriteLine(SemanticErrors.VCE0004, fname);
-                Semantica.HasError = 1;
-            }
-            else
-            {
-                //the name is not a function
-                if (GST[fname] is not STFunctionItem)
+                //func not defined
+                if (!GST.ContainsKey(fname))
                 {
-                    Console.WriteLine(SemanticErrors.VCE0005, fname);
+                    Console.WriteLine(SemanticErrors.VCE0004, fname);
                     Semantica.HasError = 1;
                 }
+                else
+                {
+                    //the name is not a function
+                    if (GST[fname] is not STFunctionItem)
+                    {
+                        Console.WriteLine(SemanticErrors.VCE0005, fname);
+                        Semantica.HasError = 1;
+                    }
+                }
+            }
+            foreach (var i in ArgList)
+            {
+                i.AOTCheck(GST, LST, earg);
             }
             return 0;
         }
@@ -1032,6 +1043,14 @@ namespace VinewoodCC
     }
     public partial class ASTCompoundStatement : ASTStatement
     {
+        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+        {
+            foreach (var i in BlockItems)
+            {
+                i.AOTCheck(GST, LST, earg);
+            }
+            return 0;
+        }
         public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
         {
             foreach (var i in BlockItems)
@@ -1042,8 +1061,11 @@ namespace VinewoodCC
     }
     public partial class ASTArrayDeclarator : ASTDeclarator
     {
+        [JsonIgnore]
+        private string VType { get; set; }
         public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
         {
+            VType = earg.VType;
             if (Declarator is ASTArrayDeclarator aDecl)
             {
                 earg.MultiDimArray = new Stack<int>();
@@ -1068,7 +1090,7 @@ namespace VinewoodCC
                         {
                             dims.Add(earg.MultiDimArray.Pop());
                         }
-                        earg.Loops.Last.Value.LPT.Add(arrName, new STArrayItem(arrName, dims));
+                        earg.Loops.Last.Value.LPT.Add(arrName, new STArrayItem(arrName, dims, earg.VType));
                     }
                 }
                 else
@@ -1087,7 +1109,7 @@ namespace VinewoodCC
                             {
                                 dims.Add(earg.MultiDimArray.Pop());
                             }
-                            LST.Add(arrName, new STArrayItem(arrName, dims));
+                            LST.Add(arrName, new STArrayItem(arrName, dims, earg.VType));
                         }
                     }
                     else
@@ -1104,7 +1126,7 @@ namespace VinewoodCC
                             {
                                 dims.Add(earg.MultiDimArray.Pop());
                             }
-                            GST.Add(arrName, new STArrayItem(arrName, dims));
+                            GST.Add(arrName, new STArrayItem(arrName, dims, earg.VType));
                             Semantica.HasError = 1;
                         }
                     }
@@ -1129,13 +1151,13 @@ namespace VinewoodCC
             {
                 ILProgram.Insert(1, new QuadTuple(ILOperator.ArrayDefine,
                     new ILIdentifier(len.ToString(), ILNameType.Constant, "int"), null,
-                    new ILIdentifier(name, ILNameType.Array, DeclarationType)));
+                    new ILIdentifier(name, ILNameType.Array, VType)));
             }
             else
             {
                 ILProgram.Add(new QuadTuple(ILOperator.ArrayDefine,
                     new ILIdentifier(len.ToString(), ILNameType.Constant, "int"), null,
-                    new ILIdentifier(name, ILNameType.Array, DeclarationType)));
+                    new ILIdentifier(name, ILNameType.Array, VType)));
             }
         }
     }

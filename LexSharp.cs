@@ -335,5 +335,18 @@ namespace LexSharp
             var end = System.DateTime.Now;
             Console.WriteLine($"Done in {(end - start).TotalMilliseconds}ms.");
         }
+        public void Run2(string arg)
+        {
+            if (ReadCodeFile(arg) != 0) return;
+            OutputFile = arg.Substring(0, arg.LastIndexOf('.')) + ".tokens";
+            Console.WriteLine("Generating tokens...");
+            for (int i = 0; i < SourceCode.Length; ++i)
+            {
+                ProcessLine(i);
+            }
+            AddEOF(arg);
+            Console.WriteLine($"{Tokens.Count} tokens generated.");
+            WriteTokens(OutputFile);
+        }
     }
 }
