@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using VinewoodCC.ILGen;
+using VinewoodCC.Semantic;
 
 namespace VinewoodCC
 {

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using VinewoodCC.ILGen;
+using VinewoodCC.Semantic;
+using VinewoodCC.ParserSharp;
 
 namespace VinewoodCC
 {
@@ -9,9 +11,9 @@ namespace VinewoodCC
         static void run(string path)
         {
             var start = DateTime.Now;
-            var LS = new LexSharp.Program();
+            var LS = new LexSharp.Lexer();
             LS.Run2(path);
-            var PS = new ParserSharp.Parser();
+            var PS = new Parser();
             PS.Run2(LS.OutputFile);
             var SC = new Semantica();
             SC.Run2(PS.OutputFile);

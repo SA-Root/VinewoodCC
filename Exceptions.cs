@@ -2,44 +2,46 @@ using System;
 
 namespace VinewoodCC
 {
-    public class SemanticErrors
+    namespace Semantic
     {
-        public static readonly string VCE0001 = "[ERROR]VCE0001: Variable or array '{0}' already defined";
-        public static readonly string VCE0002 = "[ERROR]VCE0002: Variable or array '{0}' not defined";
-        public static readonly string VCE0003 = "[ERROR]VCE0003: 'break' statement not in loop";
-        public static readonly string VCE0004 = "[ERROR]VCE0004: Function '{0}' not defined";
-        public static readonly string VCE0005 = "[ERROR]VCE0005: '{0}' is not a function";
-        public static readonly string VCE0006 = "[ERROR]VCE0006: '{0}' is not a variable or array";
-        public static readonly string VCE0007 = "[ERROR]VCE0007: 'continue' statement not in loop";
-    }
-}
-
-namespace ParserSharp
-{
-    class UnsupportedSyntaticException : Exception
-    {
-        public UnsupportedSyntaticException(string token, int line, int column) : base()
+        public class SemanticErrors
         {
-            Console.WriteLine($"[ERROR]'{token}' unsupported at Line {line},Column {column}");
+            public static readonly string VCE0001 = "[ERROR]VCE0001: Variable or array '{0}' already defined";
+            public static readonly string VCE0002 = "[ERROR]VCE0002: Variable or array '{0}' not defined";
+            public static readonly string VCE0003 = "[ERROR]VCE0003: 'break' statement not in loop";
+            public static readonly string VCE0004 = "[ERROR]VCE0004: Function '{0}' not defined";
+            public static readonly string VCE0005 = "[ERROR]VCE0005: '{0}' is not a function";
+            public static readonly string VCE0006 = "[ERROR]VCE0006: '{0}' is not a variable or array";
+            public static readonly string VCE0007 = "[ERROR]VCE0007: 'continue' statement not in loop";
         }
     }
-    class TokenMissingException : Exception
+    namespace ParserSharp
     {
-        public TokenMissingException(string token, int line, int column) : base()
+        class UnsupportedSyntaticException : Exception
         {
-            Console.WriteLine($"[ERROR]'{token}' missing at Line {line},Column {column}");
+            public UnsupportedSyntaticException(string token, int line, int column) : base()
+            {
+                Console.WriteLine($"[ERROR]'{token}' unsupported at Line {line},Column {column}");
+            }
         }
-    }
-    class UnreachableStateException : Exception
-    {
-        public UnreachableStateException() : base() { }
-    }
-    class UnsupportedTypeNameException : UnsupportedSyntaticException
-    {
-        public UnsupportedTypeNameException(string token, int line, int column) : base(token, line, column) { }
-    }
-    class VariableDeclarationMissingIdentifierException : TokenMissingException
-    {
-        public VariableDeclarationMissingIdentifierException(string token, int line, int column) : base(token, line, column) { }
+        class TokenMissingException : Exception
+        {
+            public TokenMissingException(string token, int line, int column) : base()
+            {
+                Console.WriteLine($"[ERROR]'{token}' missing at Line {line},Column {column}");
+            }
+        }
+        class UnreachableStateException : Exception
+        {
+            public UnreachableStateException() : base() { }
+        }
+        class UnsupportedTypeNameException : UnsupportedSyntaticException
+        {
+            public UnsupportedTypeNameException(string token, int line, int column) : base(token, line, column) { }
+        }
+        class VariableDeclarationMissingIdentifierException : TokenMissingException
+        {
+            public VariableDeclarationMissingIdentifierException(string token, int line, int column) : base(token, line, column) { }
+        }
     }
 }
