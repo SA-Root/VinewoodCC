@@ -154,7 +154,7 @@ namespace VinewoodCC
         public enum ILOperator
         {
             ArrayDefine = -4,
-            ArrayAssign = -3,//writeback to array elements
+            ArrayAssign = -3,//writeback addr
             Push = -2,//push arg for func call
             VarDefine = -1,//(local/global) var definition
             Assign = 0,//=

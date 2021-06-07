@@ -392,7 +392,7 @@ namespace VinewoodCC
                     }
                     else if (Expr2 is ASTConstant cc)
                     {
-                        expr.InjectConstant(cc, 1);
+                        expr.InjectConstant(cc, 0);
                     }
                     else
                     {
@@ -407,7 +407,9 @@ namespace VinewoodCC
                     else if (Expr1 is ASTArrayAccess aa)
                     {
                         Expr1.ILGenerate(ILProgram, null);
-                        expr.Operator = ILOperator.ArrayAssign;
+                        ILProgram.Last().Operator = ILOperator.LoadAddress;
+                        ILProgram.Last().LValue.ValueType = "addr";
+                        expr.Operator = ILOperator.Assign;
                         expr.LValue = ILProgram.Last().LValue;
                     }
                     ILProgram.Add(expr);
@@ -671,6 +673,7 @@ namespace VinewoodCC
                     if (Expression is ASTArrayAccess aa)
                     {
                         aa.ILGenerate(ILProgram, null);
+                        ILProgram.Last().Operator = ILOperator.LoadAddress;
                     }
                     else if (Expression is ASTIdentifier id)
                     {

@@ -37,45 +37,16 @@ namespace VinewoodCC
             }
             private void ILArrayAssign(QuadTuple qt)
             {
-                var tplt1 = "   mov eax,{0}";
+                var tplt1 = "   lea eax,{0}";
                 var offset = qt.RValueA.ID;
-                if (qt.RValueA.ValueType == "addr")
-                {
-                    if (LSymbols.ContainsKey(offset))
-                    {
-                        if (LSymbols[offset] == "addr")
-                        {
-                            ProcSegment.Add(string.Format(tplt1, "dword ptr " + offset));
-                        }
-                    }
-                    else
-                    {
-                        if (GSymbols[offset] == "addr")
-                        {
-                            ProcSegment.Add(string.Format(tplt1, "dword ptr " + offset));
-                        }
-                    }
-                }
-                else
-                {
-                    ProcSegment.Add(string.Format(tplt1, offset));
-                }
-                var tplt2 = "   mov {0},eax";
-                offset = qt.LValue.ID;
-                if (LSymbols.ContainsKey(offset))
-                {
-                    if (LSymbols[offset] == "addr")
-                    {
-                        ProcSegment.Add(string.Format(tplt2, "dword ptr " + offset));
-                    }
-                }
-                else
-                {
-                    if (GSymbols[offset] == "addr")
-                    {
-                        ProcSegment.Add(string.Format(tplt2, "dword ptr " + offset));
-                    }
-                }
+                ProcSegment.Add(string.Format(tplt1, offset));
+                var tplt2 = "   mov ebx,{0}";
+                offset = qt.RValueB.ID;
+                ProcSegment.Add(string.Format(tplt2, offset));
+                ProcSegment.Add("   imul ebx,ebx,4");
+                ProcSegment.Add("   add eax,ebx");
+                var tplt3 = "   mov {0},eax";
+                ProcSegment.Add(string.Format(tplt3, qt.LValue.ID));
             }
             private void ILPush(QuadTuple qt)
             {
@@ -84,11 +55,7 @@ namespace VinewoodCC
                 {
                     PushQueue = new List<string>();
                 }
-                if (qt.LValue.ValueType == "addr")
-                {
-                    PushQueue.Add(string.Format(tplt, "dword ptr " + qt.LValue.ID));
-                }
-                else if (qt.LValue.ValueType == "string")
+                if (qt.LValue.ValueType == "string")
                 {
                     PushQueue.Add(string.Format(tplt, "offset " + qt.LValue.ID));
                 }
@@ -204,14 +171,23 @@ namespace VinewoodCC
                 {
                     ProcSegment.Add(string.Format(tplt1, qt.RValueA.ID));
                 }
-                var tplt2 = "   mov {0},eax";
                 var target = qt.LValue.ID;
                 if (!LSymbols.ContainsKey(target) && !GSymbols.ContainsKey(target))
                 {
                     ProcSegment.Insert(0, string.Format("   local {0}:dword", target));
                     LSymbols[target] = "int";
                 }
-                ProcSegment.Add(string.Format(tplt2, target));
+                if (qt.LValue.ValueType == "addr")
+                {
+                    var tplt3 = "   mov ebx,{0}";
+                    ProcSegment.Add(string.Format(tplt3, qt.LValue.ID));
+                    ProcSegment.Add("   mov [ebx],eax");
+                }
+                else
+                {
+                    var tplt2 = "   mov {0},eax";
+                    ProcSegment.Add(string.Format(tplt2, target));
+                }
             }
             private void ILDataBegin(QuadTuple qt)
             {
@@ -335,7 +311,8 @@ namespace VinewoodCC
                 }
                 var arrName = qt.RValueA.ID;
                 ProcSegment.Add(string.Format("   lea ebx,{0}", arrName));
-                var tplt2 = "   mov {0},[eax][ebx]";
+                ProcSegment.Add("   mov eax,[eax][ebx]");
+                var tplt2 = "   mov {0},eax";
                 var target = qt.LValue.ID;
                 if (!LSymbols.ContainsKey(target) && !GSymbols.ContainsKey(target))
                 {
@@ -460,6 +437,13 @@ namespace VinewoodCC
             {
                 var tplt1 = "   lea eax,{0}";
                 ProcSegment.Add(string.Format(tplt1, qt.RValueA.ID));
+                if (qt.RValueB is not null)
+                {
+                    var tplt3 = "   mov ebx,{0}";
+                    ProcSegment.Add(string.Format(tplt3, qt.RValueB.ID));
+                    ProcSegment.Add("   imul ebx,ebx,4");
+                    ProcSegment.Add("   add eax,ebx");
+                }
                 var tplt2 = "   mov {0},eax";
                 var target = qt.LValue.ID;
                 if (!LSymbols.ContainsKey(target) && !GSymbols.ContainsKey(target))
