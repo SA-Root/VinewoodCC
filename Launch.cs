@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using VinewoodCC.ILGen;
 using VinewoodCC.Semantic;
 using VinewoodCC.ParserSharp;
+using VinewoodCC.NGen;
 
 namespace VinewoodCC
 {
@@ -20,8 +21,9 @@ namespace VinewoodCC
             if (Semantica.HasError == 0)
             {
                 var IRG = new ILGenerator(SC.Root);
-                IRG.Run2(PS.OutputFile, false);
-                
+                IRG.Run2(PS.OutputFile);
+                var NCG = new NativeCodeGenenrator(IRG.ILProgram);
+                NCG.Run();
             }
             var end = DateTime.Now;
             Console.WriteLine($"Done in {(end - start).TotalMilliseconds}ms.");

@@ -16,7 +16,7 @@ namespace VinewoodCC
             public static int TmpCounter { get; set; }
             private ASTNode Root { get; set; }
             public string OutputFile { get; set; }
-            private List<QuadTuple> ILProgram { get; set; }
+            public List<QuadTuple> ILProgram { get; set; }
             private int LoadAST(string path)
             {
                 OutputFile = path.Substring(0, path.LastIndexOf(".ast.json")) + ".vcil";
@@ -36,7 +36,7 @@ namespace VinewoodCC
                 }
                 return 0;
             }
-            private void GenerateIR(bool OutputQuadTuple)
+            private void GenerateIR()
             {
                 ILProgram = new List<QuadTuple>();
                 PostfixCache = new List<QuadTuple>();
@@ -48,21 +48,21 @@ namespace VinewoodCC
                 //ILProgram.PrintToConsole();
                 ILProgram.OutputQuadTuple(OutputFile);
             }
-            public void Run(string arg, bool OutputQuadTuple)
+            public void Run(string arg)
             {
                 var start = DateTime.Now;
                 Console.WriteLine($"Reading \"{arg}\"...");
                 if (LoadAST(arg) != 0) return;
                 Console.WriteLine("Generating IR...");
-                GenerateIR(OutputQuadTuple);
+                GenerateIR();
                 var end = DateTime.Now;
                 Console.WriteLine($"Done in {(end - start).TotalMilliseconds}ms.");
             }
-            public void Run2(string arg, bool OutputQuadTuple)
+            public void Run2(string arg)
             {
                 OutputFile = arg.Substring(0, arg.LastIndexOf(".ast.json")) + ".vcil";
                 Console.WriteLine("Generating IR...");
-                GenerateIR(OutputQuadTuple);
+                GenerateIR();
             }
             public ILGenerator(ASTNode root)
             {
