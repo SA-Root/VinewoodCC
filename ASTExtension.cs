@@ -1,200 +1,192 @@
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using VinewoodCC.ILGen;
 
 namespace VinewoodCC
 {
-    public partial class ASTNode
+    namespace AST
     {
-        //extra args:
-        //0: List<STLoopItem>
-        //1: string vtype/enum isInLoop
-        public virtual int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+        public partial class ASTNode
         {
-            return 0;
-        }
-        public virtual void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
+            //extra args:
+            //0: List<STLoopItem>
+            //1: string vtype/enum isInLoop
+            public virtual int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+            {
+                return 0;
+            }
+            public virtual void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
 
-        }
-    }
-    public partial class ASTCompilationUnit : ASTNode
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            GlobalSymbolTable = new Dictionary<string, STItem>();
-            earg = new AOTCheckExtraArg();
-            foreach (var i in Items)
-            {
-                i.AOTCheck(GlobalSymbolTable, null, earg);
-            }
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            ILProgram.Add(new QuadTuple(ILOperator.DataBegin, null, null, null));
-            ILProgram.Add(new QuadTuple(ILOperator.DataEnd, null, null, null));
-            foreach (var i in Items)
-            {
-                i.ILGenerate(ILProgram, "global");
             }
         }
-    }
-    public partial class ASTFunctionDefine : ASTNode
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+        public partial class ASTCompilationUnit : ASTNode
         {
-            LocalSymbolTable = new Dictionary<string, STItem>();
-            var funcDef = new STFunctionItem()
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
             {
-                ArgTypes = new List<string>(),
-                LST = LocalSymbolTable,
-                //get return type
-                RetType = Specifiers[0].Value,
-                //get func name
-                Identifier = ((Declarator as ASTFunctionDeclarator)?.Declarator as ASTVariableDeclarator)?.Identifier.Value
-            };
-            //get params
-            var param = (Declarator as ASTFunctionDeclarator)?.Parameters;
-            if (param is not null)
-            {
-                foreach (var p in param)
+                GlobalSymbolTable = new Dictionary<string, STItem>();
+                earg = new AOTCheckExtraArg();
+                foreach (var i in Items)
                 {
-                    var arg1 = new STVariableItem((p.Declarator as ASTVariableDeclarator)?.Identifier.Value, p.Specfiers[0].Value);
-                    //redefine
-                    if (LocalSymbolTable.ContainsKey(arg1.Identifier))
-                    {
-                        Console.WriteLine(SemanticErrors.VCE0001, arg1.Identifier);
-                        Semantica.HasError = 1;
-                    }
-                    //new
-                    else
-                    {
-                        LocalSymbolTable[arg1.Identifier] = arg1;
-                        funcDef.ArgTypes.Add(arg1.ValueType);
-                    }
+                    i.AOTCheck(GlobalSymbolTable, null, earg);
+                }
+                return 0;
+            }
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
+                ILProgram.Add(new QuadTuple(ILOperator.DataBegin, null, null, null));
+                ILProgram.Add(new QuadTuple(ILOperator.DataEnd, null, null, null));
+                foreach (var i in Items)
+                {
+                    i.ILGenerate(ILProgram, "global");
                 }
             }
-            //not defined
-            if (!GST.ContainsKey(funcDef.Identifier))
-            {
-                GST.Add(funcDef.Identifier, funcDef);
-            }
-            //defined
-            else
-            {
-                (GST[funcDef.Identifier] as STFunctionItem).LST = LocalSymbolTable;
-                (GST[funcDef.Identifier] as STFunctionItem).ArgTypes = funcDef.ArgTypes;
-            }
-            //in-function check
-            foreach (var i in Body.BlockItems)
-            {
-                i.AOTCheck(GST, LocalSymbolTable, earg);
-            }
-            return 0;
         }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+        public partial class ASTFunctionDefine : ASTNode
         {
-            var funcName = ((Declarator as ASTFunctionDeclarator).Declarator as ASTVariableDeclarator).Identifier.Value;
-            var fHead = new ILIdentifier(funcName, ILNameType.Function, null);
-            ILProgram.Add(new QuadTuple(ILOperator.ProcBegin, null, null, fHead));
-            //params
-            var param = (Declarator as ASTFunctionDeclarator)?.Parameters;
-            if (param is not null)
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
             {
-                foreach (var i in param)
+                LocalSymbolTable = new Dictionary<string, STItem>();
+                var funcDef = new STFunctionItem()
                 {
-                    var arg = (i.Declarator as ASTVariableDeclarator).Identifier.Value;
-                    var Typename = i.Specfiers[0].Value;
-                    ILProgram.Add(new QuadTuple(ILOperator.Param, null, null,
-                        new ILIdentifier(arg, ILNameType.Var, Typename)));
-                }
-            }
-            var fStart = ILProgram.Count - 1;
-            //body
-            foreach (var i in Body.BlockItems)
-            {
-                i.ILGenerate(ILProgram, "in-func");
-            }
-            ILProgram.Add(new QuadTuple(ILOperator.ProcEnd, null, null, fHead));
-        }
-    }
-    public partial class ASTDeclaration : ASTNode
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            earg.VType = Specifiers[0].Value;
-            earg.MultiDimArray = new Stack<int>();
-            foreach (var i in InitLists)
-            {
-                i.Declarator.AOTCheck(GST, LST, earg);
-                if (i.Expressions.Count > 0)
+                    ArgTypes = new List<string>(),
+                    LST = LocalSymbolTable,
+                    //get return type
+                    RetType = Specifiers[0].Value,
+                    //get func name
+                    Identifier = ((Declarator as ASTFunctionDeclarator)?.Declarator as ASTVariableDeclarator)?.Identifier.Value
+                };
+                //get params
+                var param = (Declarator as ASTFunctionDeclarator)?.Parameters;
+                if (param is not null)
                 {
-                    i.Expressions[0].AOTCheck(GST, LST, earg);
-                }
-            }
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            var DeclType = Specifiers[0].Value;
-            foreach (var i in InitLists)
-            {
-                i.Declarator.ILGenerate(ILProgram, DeclType);
-                if (DeclarationType == "global")
-                {
-                    var last = ILProgram.Last();
-                    ILProgram.Remove(ILProgram.Last());
-                    ILProgram.Insert(1, last);
-                    if (i.Expressions.Count > 0)
+                    foreach (var p in param)
                     {
-                        var qt = new QuadTuple(ILOperator.Assign, null, null, ILProgram[1].LValue);
-                        qt.InjectConstant(i.Expressions[0] as ASTConstant, 0);
-                        ILProgram.Insert(2, qt);
-                    }
-                }
-                else
-                {
-                    var newvar = ILProgram.Last().LValue;
-                    if (i.Expressions.Count > 0)
-                    {
-                        if (i.Expressions[0] is ASTConstant cst)
+                        var arg1 = new STVariableItem((p.Declarator as ASTVariableDeclarator)?.Identifier.Value, p.Specfiers[0].Value);
+                        //redefine
+                        if (LocalSymbolTable.ContainsKey(arg1.Identifier))
                         {
-                            var qt = new QuadTuple(ILOperator.Assign, null, null, newvar);
-                            qt.InjectConstant(i.Expressions[0] as ASTConstant, 0);
-                            ILProgram.Add(qt);
+                            Console.WriteLine(SemanticErrors.VCE0001, arg1.Identifier);
+                            Semantica.HasError = 1;
                         }
+                        //new
                         else
                         {
-                            i.Expressions[0].ILGenerate(ILProgram, null);
-                            var qt = new QuadTuple(ILOperator.Assign, ILProgram.Last().LValue, null, newvar);
-                            ILProgram.Add(qt);
+                            LocalSymbolTable[arg1.Identifier] = arg1;
+                            funcDef.ArgTypes.Add(arg1.ValueType);
+                        }
+                    }
+                }
+                //not defined
+                if (!GST.ContainsKey(funcDef.Identifier))
+                {
+                    GST.Add(funcDef.Identifier, funcDef);
+                }
+                //defined
+                else
+                {
+                    (GST[funcDef.Identifier] as STFunctionItem).LST = LocalSymbolTable;
+                    (GST[funcDef.Identifier] as STFunctionItem).ArgTypes = funcDef.ArgTypes;
+                }
+                //in-function check
+                foreach (var i in Body.BlockItems)
+                {
+                    i.AOTCheck(GST, LocalSymbolTable, earg);
+                }
+                return 0;
+            }
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
+                var funcName = ((Declarator as ASTFunctionDeclarator).Declarator as ASTVariableDeclarator).Identifier.Value;
+                var fHead = new ILIdentifier(funcName, ILNameType.Function, null);
+                ILProgram.Add(new QuadTuple(ILOperator.ProcBegin, null, null, fHead));
+                //params
+                var param = (Declarator as ASTFunctionDeclarator)?.Parameters;
+                if (param is not null)
+                {
+                    foreach (var i in param)
+                    {
+                        var arg = (i.Declarator as ASTVariableDeclarator).Identifier.Value;
+                        var Typename = i.Specfiers[0].Value;
+                        ILProgram.Add(new QuadTuple(ILOperator.Param, null, null,
+                            new ILIdentifier(arg, ILNameType.Var, Typename)));
+                    }
+                }
+                var fStart = ILProgram.Count - 1;
+                //body
+                foreach (var i in Body.BlockItems)
+                {
+                    i.ILGenerate(ILProgram, "in-func");
+                }
+                ILProgram.Add(new QuadTuple(ILOperator.ProcEnd, null, null, fHead));
+            }
+        }
+        public partial class ASTDeclaration : ASTNode
+        {
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+            {
+                earg.VType = Specifiers[0].Value;
+                earg.MultiDimArray = new Stack<int>();
+                foreach (var i in InitLists)
+                {
+                    i.Declarator.AOTCheck(GST, LST, earg);
+                    if (i.Expressions.Count > 0)
+                    {
+                        i.Expressions[0].AOTCheck(GST, LST, earg);
+                    }
+                }
+                return 0;
+            }
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
+                var DeclType = Specifiers[0].Value;
+                foreach (var i in InitLists)
+                {
+                    i.Declarator.ILGenerate(ILProgram, DeclType);
+                    if (DeclarationType == "global")
+                    {
+                        var last = ILProgram.Last();
+                        ILProgram.Remove(ILProgram.Last());
+                        ILProgram.Insert(1, last);
+                        if (i.Expressions.Count > 0)
+                        {
+                            var qt = new QuadTuple(ILOperator.Assign, null, null, ILProgram[1].LValue);
+                            qt.InjectConstant(i.Expressions[0] as ASTConstant, 0);
+                            ILProgram.Insert(2, qt);
+                        }
+                    }
+                    else
+                    {
+                        var newvar = ILProgram.Last().LValue;
+                        if (i.Expressions.Count > 0)
+                        {
+                            if (i.Expressions[0] is ASTConstant cst)
+                            {
+                                var qt = new QuadTuple(ILOperator.Assign, null, null, newvar);
+                                qt.InjectConstant(i.Expressions[0] as ASTConstant, 0);
+                                ILProgram.Add(qt);
+                            }
+                            else
+                            {
+                                i.Expressions[0].ILGenerate(ILProgram, null);
+                                var qt = new QuadTuple(ILOperator.Assign, ILProgram.Last().LValue, null, newvar);
+                                ILProgram.Add(qt);
+                            }
                         }
                     }
                 }
             }
         }
-    }
-    public partial class ASTIdentifier : ASTExpression
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+        public partial class ASTIdentifier : ASTExpression
         {
-            var id = Value;
-            if (LST.ContainsKey(id))
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
             {
-                //the name is not a var or array
-                if ((LST[id] is not STVariableItem) && (LST[id] is not STArrayItem))
-                {
-                    Console.WriteLine(SemanticErrors.VCE0006, id);
-                    Semantica.HasError = 1;
-                }
-            }
-            else
-            {
-                if (GST.ContainsKey(id))
+                var id = Value;
+                if (LST.ContainsKey(id))
                 {
                     //the name is not a var or array
-                    if ((GST[id] is not STVariableItem) && (GST[id] is not STArrayItem))
+                    if ((LST[id] is not STVariableItem) && (LST[id] is not STArrayItem))
                     {
                         Console.WriteLine(SemanticErrors.VCE0006, id);
                         Semantica.HasError = 1;
@@ -202,1034 +194,1047 @@ namespace VinewoodCC
                 }
                 else
                 {
-                    bool defined = false;
-                    foreach (var i in earg.Loops)
+                    if (GST.ContainsKey(id))
                     {
-                        if (i.LPT.ContainsKey(id))
+                        //the name is not a var or array
+                        if ((GST[id] is not STVariableItem) && (GST[id] is not STArrayItem))
                         {
-                            defined = true;
-                            break;
+                            Console.WriteLine(SemanticErrors.VCE0006, id);
+                            Semantica.HasError = 1;
                         }
                     }
-                    if (!defined)
+                    else
                     {
-                        Console.WriteLine(SemanticErrors.VCE0002, id);
-                        Semantica.HasError = 1;
+                        bool defined = false;
+                        foreach (var i in earg.Loops)
+                        {
+                            if (i.LPT.ContainsKey(id))
+                            {
+                                defined = true;
+                                break;
+                            }
+                        }
+                        if (!defined)
+                        {
+                            Console.WriteLine(SemanticErrors.VCE0002, id);
+                            Semantica.HasError = 1;
+                        }
                     }
                 }
+                return 0;
             }
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            var tmpcopy = new QuadTuple(ILOperator.Assign,
-                new ILIdentifier(Value, ILNameType.Var, null), null,
-                new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
-            ++ILGenerator.TmpCounter;
-            ILProgram.Add(tmpcopy);
-        }
-    }
-    public partial class ASTArrayAccess : ASTExpression
-    {
-        [JsonIgnore]
-        private string VType { get; set; }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            var id = (ArrayName as ASTIdentifier).Value;
-            //local array
-            if (LST != null && LST.ContainsKey(id))
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
             {
-                VType = (LST[id] as STArrayItem).ValueType;
+                var tmpcopy = new QuadTuple(ILOperator.Assign,
+                    new ILIdentifier(Value, ILNameType.Var, null), null,
+                    new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
+                ++ILGenerator.TmpCounter;
+                ILProgram.Add(tmpcopy);
             }
-            else
+        }
+        public partial class ASTArrayAccess : ASTExpression
+        {
+            [JsonIgnore]
+            private string VType { get; set; }
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
             {
-                //global array
-                if (GST.ContainsKey(id))
+                var id = (ArrayName as ASTIdentifier).Value;
+                //local array
+                if (LST != null && LST.ContainsKey(id))
                 {
-                    VType = (GST[id] as STArrayItem).ValueType;
+                    VType = (LST[id] as STArrayItem).ValueType;
                 }
-                //not defined
                 else
                 {
-                    bool defined = false;
-                    foreach (var i in earg.Loops)
+                    //global array
+                    if (GST.ContainsKey(id))
                     {
-                        if (i.LPT.ContainsKey(id))
+                        VType = (GST[id] as STArrayItem).ValueType;
+                    }
+                    //not defined
+                    else
+                    {
+                        bool defined = false;
+                        foreach (var i in earg.Loops)
                         {
-                            defined = true;
-                            VType = (i.LPT[id] as STArrayItem).ValueType;
-                            break;
+                            if (i.LPT.ContainsKey(id))
+                            {
+                                defined = true;
+                                VType = (i.LPT[id] as STArrayItem).ValueType;
+                                break;
+                            }
+                        }
+                        if (!defined)
+                        {
+                            Console.WriteLine(SemanticErrors.VCE0002, id);
+                            Semantica.HasError = 1;
                         }
                     }
-                    if (!defined)
-                    {
-                        Console.WriteLine(SemanticErrors.VCE0002, id);
-                        Semantica.HasError = 1;
-                    }
                 }
+                foreach (var i in Elements)
+                {
+                    i.AOTCheck(GST, LST, earg);
+                }
+                return 0;
             }
-            foreach (var i in Elements)
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
             {
-                i.AOTCheck(GST, LST, earg);
-            }
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            var ArrName = (ArrayName as ASTIdentifier).Value;
-            var dim1 = new ILIdentifier();
-            if (Elements[0] is ASTIntegerConstant ic)
-            {
-                dim1.ILNameType = ILNameType.Constant;
-                dim1.ValueType = "int";
-                dim1.ID = ic.Value.ToString();
-            }
-            else if (Elements[0] is ASTIdentifier id)
-            {
-                dim1.ILNameType = ILNameType.Var;
-                dim1.ID = id.Value;
-            }
-            else
-            {
-                Elements[0].ILGenerate(ILProgram, null);
-                dim1 = ILProgram.Last().LValue;
-            }
-            //2-D array
-            if (Elements.Count > 1)
-            {
-                var dim2 = new ILIdentifier();
+                var ArrName = (ArrayName as ASTIdentifier).Value;
+                var dim1 = new ILIdentifier();
+                if (Elements[0] is ASTIntegerConstant ic)
+                {
+                    dim1.ILNameType = ILNameType.Constant;
+                    dim1.ValueType = "int";
+                    dim1.ID = ic.Value.ToString();
+                }
+                else if (Elements[0] is ASTIdentifier id)
+                {
+                    dim1.ILNameType = ILNameType.Var;
+                    dim1.ID = id.Value;
+                }
+                else
+                {
+                    Elements[0].ILGenerate(ILProgram, null);
+                    dim1 = ILProgram.Last().LValue;
+                }
+                //2-D array
+                if (Elements.Count > 1)
+                {
+                    var dim2 = new ILIdentifier();
 
-                if (Elements[1] is ASTIntegerConstant ic2)
-                {
-                    dim2.ILNameType = ILNameType.Constant;
-                    dim2.ValueType = "int";
-                    dim2.ID = ic2.Value.ToString();
-                }
-                else if (Elements[1] is ASTIdentifier id2)
-                {
-                    dim2.ILNameType = ILNameType.Var;
-                    dim2.ID = id2.Value;
-                }
-                else
-                {
-                    Elements[1].ILGenerate(ILProgram, null);
-                    dim2 = ILProgram.Last().LValue;
-                }
-                ILProgram.Add(new QuadTuple(ILOperator.Add, dim1, dim2,
-                    new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "int")));
-                ++ILGenerator.TmpCounter;
-                ILProgram.Add(new QuadTuple(ILOperator.ArrayAccess,
-                    new ILIdentifier(ArrName, ILNameType.Var, VType), ILProgram.Last().LValue,
-                    new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "addr")));
-                ++ILGenerator.TmpCounter;
-            }
-            else
-            {
-                ILProgram.Add(new QuadTuple(ILOperator.ArrayAccess,
-                    new ILIdentifier(ArrName, ILNameType.Var, VType), dim1,
-                    new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "addr")));
-                ++ILGenerator.TmpCounter;
-            }
-            ILProgram.MergePostfix();
-        }
-    }
-    public partial class ASTBinaryExpression : ASTExpression
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            Expr1.AOTCheck(GST, LST, earg);
-            Expr2.AOTCheck(GST, LST, earg);
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            var op = Operator.Value;
-            var expr = new QuadTuple();
-            if (op == "+=" || op == "-=" || op == "*=" || op == "/=")
-            {
-                expr.Operator = ILOperator.Assign;
-                expr.LValue = new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null);
-                if (Expr1 is ASTIdentifier id)
-                {
-                    expr.RValueB = new ILIdentifier(id.Value, ILNameType.Var, null);
-                }
-                else if (Expr1 is ASTArrayAccess aa)
-                {
-                    Expr1.ILGenerate(ILProgram, null);
-                    expr.RValueB = ILProgram.Last().LValue;
-                }
-                if (Expr2 is ASTIdentifier id2)
-                {
-                    var rvalue = id2.Value;
-                    expr.RValueA = new ILIdentifier(rvalue, ILNameType.Var, null);
-                }
-                else if (Expr2 is ASTConstant cc)
-                {
-                    expr.InjectConstant(cc, 0);
+                    if (Elements[1] is ASTIntegerConstant ic2)
+                    {
+                        dim2.ILNameType = ILNameType.Constant;
+                        dim2.ValueType = "int";
+                        dim2.ID = ic2.Value.ToString();
+                    }
+                    else if (Elements[1] is ASTIdentifier id2)
+                    {
+                        dim2.ILNameType = ILNameType.Var;
+                        dim2.ID = id2.Value;
+                    }
+                    else
+                    {
+                        Elements[1].ILGenerate(ILProgram, null);
+                        dim2 = ILProgram.Last().LValue;
+                    }
+                    ILProgram.Add(new QuadTuple(ILOperator.Add, dim1, dim2,
+                        new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "int")));
+                    ++ILGenerator.TmpCounter;
+                    ILProgram.Add(new QuadTuple(ILOperator.ArrayAccess,
+                        new ILIdentifier(ArrName, ILNameType.Var, VType), ILProgram.Last().LValue,
+                        new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "addr")));
+                    ++ILGenerator.TmpCounter;
                 }
                 else
                 {
-                    Expr2.ILGenerate(ILProgram, null);
-                    expr.RValueA = ILProgram.Last().LValue;
-                }
-                ILProgram.Add(expr);
-                if (Expr1 is ASTIdentifier)
-                {
-                    ILProgram.Add(new QuadTuple(ILOperator.Assign, ILProgram.Last().LValue, null, expr.RValueB));
-                }
-                else if (Expr1 is ASTArrayAccess)
-                {
-                    ILProgram.Add(new QuadTuple(ILOperator.ArrayAssign, ILProgram.Last().LValue, null, expr.RValueB));
+                    ILProgram.Add(new QuadTuple(ILOperator.ArrayAccess,
+                        new ILIdentifier(ArrName, ILNameType.Var, VType), dim1,
+                        new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "addr")));
+                    ++ILGenerator.TmpCounter;
                 }
                 ILProgram.MergePostfix();
             }
-            else if (op == "=")
+        }
+        public partial class ASTBinaryExpression : ASTExpression
+        {
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
             {
-                if (Expr2 is ASTIdentifier id2)
-                {
-                    var rvalue = id2.Value;
-                    expr.RValueA = new ILIdentifier(rvalue, ILNameType.Var, null);
-                }
-                else if (Expr2 is ASTConstant cc)
-                {
-                    expr.InjectConstant(cc, 1);
-                }
-                else
-                {
-                    Expr2.ILGenerate(ILProgram, null);
-                    expr.RValueA = ILProgram.Last().LValue;
-                }
-                if (Expr1 is ASTIdentifier id)
+                Expr1.AOTCheck(GST, LST, earg);
+                Expr2.AOTCheck(GST, LST, earg);
+                return 0;
+            }
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
+                var op = Operator.Value;
+                var expr = new QuadTuple();
+                if (op == "+=" || op == "-=" || op == "*=" || op == "/=")
                 {
                     expr.Operator = ILOperator.Assign;
-                    expr.LValue = new ILIdentifier(id.Value, ILNameType.Var, null);
+                    expr.LValue = new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null);
+                    if (Expr1 is ASTIdentifier id)
+                    {
+                        expr.RValueB = new ILIdentifier(id.Value, ILNameType.Var, null);
+                    }
+                    else if (Expr1 is ASTArrayAccess aa)
+                    {
+                        Expr1.ILGenerate(ILProgram, null);
+                        expr.RValueB = ILProgram.Last().LValue;
+                    }
+                    if (Expr2 is ASTIdentifier id2)
+                    {
+                        var rvalue = id2.Value;
+                        expr.RValueA = new ILIdentifier(rvalue, ILNameType.Var, null);
+                    }
+                    else if (Expr2 is ASTConstant cc)
+                    {
+                        expr.InjectConstant(cc, 0);
+                    }
+                    else
+                    {
+                        Expr2.ILGenerate(ILProgram, null);
+                        expr.RValueA = ILProgram.Last().LValue;
+                    }
+                    ILProgram.Add(expr);
+                    if (Expr1 is ASTIdentifier)
+                    {
+                        ILProgram.Add(new QuadTuple(ILOperator.Assign, ILProgram.Last().LValue, null, expr.RValueB));
+                    }
+                    else if (Expr1 is ASTArrayAccess)
+                    {
+                        ILProgram.Add(new QuadTuple(ILOperator.ArrayAssign, ILProgram.Last().LValue, null, expr.RValueB));
+                    }
+                    ILProgram.MergePostfix();
                 }
-                else if (Expr1 is ASTArrayAccess aa)
+                else if (op == "=")
                 {
-                    Expr1.ILGenerate(ILProgram, null);
-                    expr.Operator = ILOperator.ArrayAssign;
-                    expr.LValue = ILProgram.Last().LValue;
-                }
-                ILProgram.Add(expr);
-                ILProgram.MergePostfix();
-            }
-            else
-            {
-                if (op == "+")
-                {
-                    expr.Operator = ILOperator.Add;
-                }
-                else if (op == "-")
-                {
-                    expr.Operator = ILOperator.Subtract;
-                }
-                else if (op == "*")
-                {
-                    expr.Operator = ILOperator.Multiply;
-                }
-                else if (op == "/")
-                {
-                    expr.Operator = ILOperator.Division;
-                }
-                else if (op == ">")
-                {
-                    expr.Operator = ILOperator.Greater;
-                }
-                else if (op == "<")
-                {
-                    expr.Operator = ILOperator.Less;
-                }
-                else if (op == "==")
-                {
-                    expr.Operator = ILOperator.Equal;
-                }
-                else if (op == ">=")
-                {
-                    expr.Operator = ILOperator.GreaterEqual;
-                }
-                else if (op == "<=")
-                {
-                    expr.Operator = ILOperator.LessEqual;
-                }
-                if (Expr2 is ASTIdentifier id2)
-                {
-                    var rvalue = id2.Value;
-                    expr.RValueB = new ILIdentifier(rvalue, ILNameType.Var, null);
-                }
-                else if (Expr2 is ASTConstant cc)
-                {
-                    expr.InjectConstant(cc, 1);
+                    if (Expr2 is ASTIdentifier id2)
+                    {
+                        var rvalue = id2.Value;
+                        expr.RValueA = new ILIdentifier(rvalue, ILNameType.Var, null);
+                    }
+                    else if (Expr2 is ASTConstant cc)
+                    {
+                        expr.InjectConstant(cc, 1);
+                    }
+                    else
+                    {
+                        Expr2.ILGenerate(ILProgram, null);
+                        expr.RValueA = ILProgram.Last().LValue;
+                    }
+                    if (Expr1 is ASTIdentifier id)
+                    {
+                        expr.Operator = ILOperator.Assign;
+                        expr.LValue = new ILIdentifier(id.Value, ILNameType.Var, null);
+                    }
+                    else if (Expr1 is ASTArrayAccess aa)
+                    {
+                        Expr1.ILGenerate(ILProgram, null);
+                        expr.Operator = ILOperator.ArrayAssign;
+                        expr.LValue = ILProgram.Last().LValue;
+                    }
+                    ILProgram.Add(expr);
+                    ILProgram.MergePostfix();
                 }
                 else
                 {
-                    Expr2.ILGenerate(ILProgram, null);
-                    expr.RValueB = ILProgram.Last().LValue;
+                    if (op == "+")
+                    {
+                        expr.Operator = ILOperator.Add;
+                    }
+                    else if (op == "-")
+                    {
+                        expr.Operator = ILOperator.Subtract;
+                    }
+                    else if (op == "*")
+                    {
+                        expr.Operator = ILOperator.Multiply;
+                    }
+                    else if (op == "/")
+                    {
+                        expr.Operator = ILOperator.Division;
+                    }
+                    else if (op == ">")
+                    {
+                        expr.Operator = ILOperator.Greater;
+                    }
+                    else if (op == "<")
+                    {
+                        expr.Operator = ILOperator.Less;
+                    }
+                    else if (op == "==")
+                    {
+                        expr.Operator = ILOperator.Equal;
+                    }
+                    else if (op == ">=")
+                    {
+                        expr.Operator = ILOperator.GreaterEqual;
+                    }
+                    else if (op == "<=")
+                    {
+                        expr.Operator = ILOperator.LessEqual;
+                    }
+                    if (Expr2 is ASTIdentifier id2)
+                    {
+                        var rvalue = id2.Value;
+                        expr.RValueB = new ILIdentifier(rvalue, ILNameType.Var, null);
+                    }
+                    else if (Expr2 is ASTConstant cc)
+                    {
+                        expr.InjectConstant(cc, 1);
+                    }
+                    else
+                    {
+                        Expr2.ILGenerate(ILProgram, null);
+                        expr.RValueB = ILProgram.Last().LValue;
+                    }
+                    if (Expr1 is ASTIdentifier id)
+                    {
+                        expr.RValueA = new ILIdentifier(id.Value, ILNameType.Var, null);
+                    }
+                    else if (Expr1 is ASTArrayAccess aa)
+                    {
+                        Expr1.ILGenerate(ILProgram, null);
+                        expr.RValueA = ILProgram.Last().LValue;
+                    }
+                    else if (Expr1 is ASTConstant cc)
+                    {
+                        expr.InjectConstant(cc, 0);
+                    }
+                    expr.LValue = new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null);
+                    ++ILGenerator.TmpCounter;
+                    ILProgram.Add(expr);
                 }
-                if (Expr1 is ASTIdentifier id)
-                {
-                    expr.RValueA = new ILIdentifier(id.Value, ILNameType.Var, null);
-                }
-                else if (Expr1 is ASTArrayAccess aa)
-                {
-                    Expr1.ILGenerate(ILProgram, null);
-                    expr.RValueA = ILProgram.Last().LValue;
-                }
-                else if (Expr1 is ASTConstant cc)
-                {
-                    expr.InjectConstant(cc, 0);
-                }
-                expr.LValue = new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null);
-                ++ILGenerator.TmpCounter;
-                ILProgram.Add(expr);
             }
         }
-    }
-    public partial class ASTFunctionCall : ASTExpression
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+        public partial class ASTFunctionCall : ASTExpression
         {
-            var fname = (FunctionName as ASTIdentifier).Value;
-            if (fname != "printf" && fname != "scanf")
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
             {
-                //func not defined
-                if (!GST.ContainsKey(fname))
+                var fname = (FunctionName as ASTIdentifier).Value;
+                if (fname != "printf" && fname != "scanf")
                 {
-                    Console.WriteLine(SemanticErrors.VCE0004, fname);
-                    Semantica.HasError = 1;
-                }
-                else
-                {
-                    //the name is not a function
-                    if (GST[fname] is not STFunctionItem)
+                    //func not defined
+                    if (!GST.ContainsKey(fname))
                     {
-                        Console.WriteLine(SemanticErrors.VCE0005, fname);
+                        Console.WriteLine(SemanticErrors.VCE0004, fname);
                         Semantica.HasError = 1;
                     }
-                }
-            }
-            foreach (var i in ArgList)
-            {
-                i.AOTCheck(GST, LST, earg);
-            }
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            foreach (var i in ArgList)
-            {
-                if (i is ASTIdentifier id)
-                {
-                    ILProgram.Add(new QuadTuple(ILOperator.Push, null, null,
-                        new ILIdentifier(id.Value, ILNameType.Var, null)));
-                }
-                else if (i is ASTConstant c)
-                {
-                    var cst = new QuadTuple(ILOperator.Push, null, null, null);
-                    if (c is ASTStringConstant sc)
-                    {
-                        ILProgram.Insert(1, new QuadTuple(ILOperator.VarDefine, null, null,
-                            new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "string")));
-                        ++ILGenerator.TmpCounter;
-                        ILProgram.Insert(2, new QuadTuple(ILOperator.Assign, new ILIdentifier(sc.Value, ILNameType.Constant, "string"), null,
-                            ILProgram[1].LValue));
-                        cst.InjectConstant(sc, 2, ILProgram[1].LValue);
-                    }
                     else
                     {
-                        cst.InjectConstant(c, 2);
+                        //the name is not a function
+                        if (GST[fname] is not STFunctionItem)
+                        {
+                            Console.WriteLine(SemanticErrors.VCE0005, fname);
+                            Semantica.HasError = 1;
+                        }
                     }
-                    ILProgram.Add(cst);
                 }
-                else
+                foreach (var i in ArgList)
                 {
-                    i.ILGenerate(ILProgram, null);
-                    if (ILProgram.Last().Operator == ILOperator.LoadAddress)
-                    {
-                        ILProgram.Add(new QuadTuple(ILOperator.PushAddr, null, null,
-                            ILProgram.Last().LValue));
-                    }
-                    else
+                    i.AOTCheck(GST, LST, earg);
+                }
+                return 0;
+            }
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
+                foreach (var i in ArgList)
+                {
+                    if (i is ASTIdentifier id)
                     {
                         ILProgram.Add(new QuadTuple(ILOperator.Push, null, null,
-                            ILProgram.Last().LValue));
+                            new ILIdentifier(id.Value, ILNameType.Var, null)));
+                    }
+                    else if (i is ASTConstant c)
+                    {
+                        var cst = new QuadTuple(ILOperator.Push, null, null, null);
+                        if (c is ASTStringConstant sc)
+                        {
+                            ILProgram.Insert(1, new QuadTuple(ILOperator.VarDefine, null, null,
+                                new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "string")));
+                            ++ILGenerator.TmpCounter;
+                            ILProgram.Insert(2, new QuadTuple(ILOperator.Assign, new ILIdentifier(sc.Value, ILNameType.Constant, "string"), null,
+                                ILProgram[1].LValue));
+                            cst.InjectConstant(sc, 2, ILProgram[1].LValue);
+                        }
+                        else
+                        {
+                            cst.InjectConstant(c, 2);
+                        }
+                        ILProgram.Add(cst);
+                    }
+                    else
+                    {
+                        i.ILGenerate(ILProgram, null);
+                        if (ILProgram.Last().Operator == ILOperator.LoadAddress)
+                        {
+                            ILProgram.Add(new QuadTuple(ILOperator.PushAddr, null, null,
+                                ILProgram.Last().LValue));
+                        }
+                        else
+                        {
+                            ILProgram.Add(new QuadTuple(ILOperator.Push, null, null,
+                                ILProgram.Last().LValue));
+                        }
                     }
                 }
-            }
-            var fname = (FunctionName as ASTIdentifier).Value;
-            ILProgram.Add(new QuadTuple(ILOperator.Call, new ILIdentifier(fname, ILNameType.Function, null), null,
-                new ILIdentifier("@Callback" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null)));
-            ++ILGenerator.TmpCounter;
-            ILProgram.MergePostfix();
-        }
-    }
-    public partial class ASTPostfixExpression : ASTExpression
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            if (Expression is ASTIdentifier ie)
-            {
-                ie.AOTCheck(GST, LST, earg);
-            }
-            else if (Expression is ASTArrayAccess aa)
-            {
-                aa.AOTCheck(GST, LST, earg);
-            }
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            var ocopy = new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null);
-            ++ILGenerator.TmpCounter;
-            if (Operator.Value == "--")
-            {
-                if (Expression is ASTArrayAccess aa)
-                {
-                    aa.ILGenerate(ILProgram, null);
-                    ILGenerator.PostfixCache.Add(new QuadTuple(ILOperator.Decrease, null, null, ILProgram.Last().LValue));
-                }
-                else if (Expression is ASTIdentifier id)
-                {
-                    var original = new ILIdentifier(id.Value, ILNameType.Var, null);
-                    ILProgram.Add(new QuadTuple(ILOperator.Assign, original, null, ocopy));
-                    ILGenerator.PostfixCache.Add(new QuadTuple(ILOperator.Decrease, null, null, original));
-                }
-            }
-            else if (Operator.Value == "++")
-            {
-                if (Expression is ASTArrayAccess aa)
-                {
-                    aa.ILGenerate(ILProgram, null);
-                    ILGenerator.PostfixCache.Add(new QuadTuple(ILOperator.Increase, null, null, ILProgram.Last().LValue));
-                }
-                else if (Expression is ASTIdentifier id)
-                {
-                    var original = new ILIdentifier(id.Value, ILNameType.Var, null);
-                    ILProgram.Add(new QuadTuple(ILOperator.Assign, original, null, ocopy));
-                    ILGenerator.PostfixCache.Add(new QuadTuple(ILOperator.Increase, null, null, original));
-                }
-            }
-        }
-    }
-    public partial class ASTUnaryExpression : ASTExpression
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            if (Expression is ASTIdentifier ie)
-            {
-                ie.AOTCheck(GST, LST, earg);
-            }
-            else if (Expression is ASTArrayAccess aa)
-            {
-                aa.AOTCheck(GST, LST, earg);
-            }
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            var ocopy = new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null);
-            ++ILGenerator.TmpCounter;
-            if (Operator.Value == "!")
-            {
-                if (Expression is ASTArrayAccess aa)
-                {
-                    aa.ILGenerate(ILProgram, null);
-                    ILProgram.Add(new QuadTuple(ILOperator.Not, ILProgram.Last().LValue, null,
-                        new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null)));
-                    ++ILGenerator.TmpCounter;
-                }
-                else if (Expression is ASTIdentifier id)
-                {
-                    var original = new ILIdentifier(id.Value, ILNameType.Var, null);
-                    ILProgram.Add(new QuadTuple(ILOperator.Not, original, null,
-                        new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null)));
-                    ++ILGenerator.TmpCounter;
-                }
-            }
-            else if (Operator.Value == "--")
-            {
-                if (Expression is ASTArrayAccess aa)
-                {
-                    aa.ILGenerate(ILProgram, null);
-                    ILProgram.Add(new QuadTuple(ILOperator.Decrease, null, null, ILProgram.Last().LValue));
-                }
-                else if (Expression is ASTIdentifier id)
-                {
-                    var original = new ILIdentifier(id.Value, ILNameType.Var, null);
-                    ILProgram.Add(new QuadTuple(ILOperator.Decrease, null, null, original));
-                }
-            }
-            else if (Operator.Value == "++")
-            {
-                if (Expression is ASTArrayAccess aa)
-                {
-                    aa.ILGenerate(ILProgram, null);
-                    ILProgram.Add(new QuadTuple(ILOperator.Increase, null, null, ILProgram.Last().LValue));
-                }
-                else if (Expression is ASTIdentifier id)
-                {
-                    var original = new ILIdentifier(id.Value, ILNameType.Var, null);
-                    ILProgram.Add(new QuadTuple(ILOperator.Increase, null, null, original));
-                }
-            }
-            else if (Operator.Value == "&")
-            {
-                if (Expression is ASTArrayAccess aa)
-                {
-                    aa.ILGenerate(ILProgram, null);
-                    ILProgram.Last().Operator = ILOperator.LoadAddress;
-                }
-                else if (Expression is ASTIdentifier id)
-                {
-                    var original = new ILIdentifier(id.Value, ILNameType.Var, null);
-                    ILProgram.Add(new QuadTuple(ILOperator.LoadAddress, null, null, original));
-                }
-            }
-        }
-    }
-    public partial class ASTBreakStatement : ASTStatement
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            if (!earg.isInLoop)
-            {
-                Console.WriteLine(SemanticErrors.VCE0003);
-                Semantica.HasError = 1;
-            }
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, ILGenerator.LoopBreakStack.Peek().LValue));
-        }
-    }
-    public partial class ASTContinueStatement : ASTStatement
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            if (!earg.isInLoop)
-            {
-                Console.WriteLine(SemanticErrors.VCE0007);
-                Semantica.HasError = 1;
-            }
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, ILGenerator.LoopContinueStack.Peek().LValue));
-        }
-    }
-    public partial class ASTReturnStatement : ASTStatement
-    {
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            if (Expression is not null)
-            {
-                if (Expression[0] is ASTIdentifier id)
-                {
-                    ILProgram.Add(new QuadTuple(ILOperator.Return, null, null,
-                        new ILIdentifier(id.Value, ILNameType.Var, null)));
-                }
-                else if (Expression[0] is ASTConstant cst)
-                {
-                    var ret = new QuadTuple(ILOperator.Return, null, null,
-                        null);
-                    ret.InjectConstant(cst, 2);
-                    ILProgram.Add(ret);
-                }
-                else
-                {
-                    Expression[0].ILGenerate(ILProgram, null);
-                    ILProgram.Add(new QuadTuple(ILOperator.Return, null, null, ILProgram.Last().LValue));
-                }
-            }
-            else
-            {
-                ILProgram.Add(new QuadTuple(ILOperator.Return, null, null, null));
-            }
-        }
-    }
-    public partial class ASTExpressionStatement : ASTStatement
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            foreach (var i in Expressions)
-            {
-                i.AOTCheck(GST, LST, earg);
-            }
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            Expressions[0].ILGenerate(ILProgram, DeclarationType);
-        }
-    }
-    public partial class ASTIterationDeclaredStatement : ASTStatement
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            var lpST = new STLoopItem()
-            {
-                LPT = new Dictionary<string, STItem>()
-            };
-            earg.Loops.AddLast(lpST);
-            Initilize?.AOTCheck(GST, LST, earg);
-            Condition?[0].AOTCheck(GST, LST, earg);
-            Step?[0].AOTCheck(GST, LST, earg);
-            earg.isInLoop = true;
-            foreach (var i in (Stat as ASTCompoundStatement)?.BlockItems)
-            {
-                i.AOTCheck(GST, LST, earg);
-            }
-            if (earg.Loops.Count <= 1) earg.isInLoop = false;
-            earg.Loops.RemoveLast();
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            var jmpCond = new QuadTuple(ILOperator.JmpTarget, null, null,
-                new ILIdentifier("@Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
-            ++ILGenerator.TmpCounter;
-            var jmpEnd = new QuadTuple(ILOperator.JmpTarget, null, null,
-                new ILIdentifier("@Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
-            ILGenerator.LoopBreakStack.Push(jmpEnd);
-            ++ILGenerator.TmpCounter;
-            var jmpStep = new QuadTuple(ILOperator.JmpTarget, null, null,
-                new ILIdentifier("@Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
-            ++ILGenerator.TmpCounter;
-            ILGenerator.LoopContinueStack.Push(jmpStep);
-            if (Initilize is not null)
-            {
-                Initilize.ILGenerate(ILProgram, "loop");
-            }
-            ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpCond.LValue));
-            ILProgram.Add(jmpStep);
-            if (Step is not null)
-            {
-                Step[0].ILGenerate(ILProgram, null);
+                var fname = (FunctionName as ASTIdentifier).Value;
+                ILProgram.Add(new QuadTuple(ILOperator.Call, new ILIdentifier(fname, ILNameType.Function, null), null,
+                    new ILIdentifier("@Callback" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null)));
+                ++ILGenerator.TmpCounter;
                 ILProgram.MergePostfix();
             }
-            ILProgram.Add(jmpCond);
-            if (Condition is not null)
+        }
+        public partial class ASTPostfixExpression : ASTExpression
+        {
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
             {
-                if (Condition[0] is ASTBinaryExpression be)
+                if (Expression is ASTIdentifier ie)
                 {
-                    if (be.Operator.Value == "&&")
+                    ie.AOTCheck(GST, LST, earg);
+                }
+                else if (Expression is ASTArrayAccess aa)
+                {
+                    aa.AOTCheck(GST, LST, earg);
+                }
+                return 0;
+            }
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
+                var ocopy = new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null);
+                ++ILGenerator.TmpCounter;
+                if (Operator.Value == "--")
+                {
+                    if (Expression is ASTArrayAccess aa)
                     {
-                        be.Expr1.ILGenerate(ILProgram, null);
-                        ILProgram.Add(new QuadTuple(ILOperator.Jne,
-                            ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
-                        be.Expr2.ILGenerate(ILProgram, null);
+                        aa.ILGenerate(ILProgram, null);
+                        ILGenerator.PostfixCache.Add(new QuadTuple(ILOperator.Decrease, null, null, ILProgram.Last().LValue));
                     }
-                    else if (be.Operator.Value == "||")
+                    else if (Expression is ASTIdentifier id)
                     {
-                        be.Expr1.ILGenerate(ILProgram, null);
-                        ILProgram.Add(new QuadTuple(ILOperator.Je,
-                            ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
-                        be.Expr2.ILGenerate(ILProgram, null);
+                        var original = new ILIdentifier(id.Value, ILNameType.Var, null);
+                        ILProgram.Add(new QuadTuple(ILOperator.Assign, original, null, ocopy));
+                        ILGenerator.PostfixCache.Add(new QuadTuple(ILOperator.Decrease, null, null, original));
+                    }
+                }
+                else if (Operator.Value == "++")
+                {
+                    if (Expression is ASTArrayAccess aa)
+                    {
+                        aa.ILGenerate(ILProgram, null);
+                        ILGenerator.PostfixCache.Add(new QuadTuple(ILOperator.Increase, null, null, ILProgram.Last().LValue));
+                    }
+                    else if (Expression is ASTIdentifier id)
+                    {
+                        var original = new ILIdentifier(id.Value, ILNameType.Var, null);
+                        ILProgram.Add(new QuadTuple(ILOperator.Assign, original, null, ocopy));
+                        ILGenerator.PostfixCache.Add(new QuadTuple(ILOperator.Increase, null, null, original));
+                    }
+                }
+            }
+        }
+        public partial class ASTUnaryExpression : ASTExpression
+        {
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+            {
+                if (Expression is ASTIdentifier ie)
+                {
+                    ie.AOTCheck(GST, LST, earg);
+                }
+                else if (Expression is ASTArrayAccess aa)
+                {
+                    aa.AOTCheck(GST, LST, earg);
+                }
+                return 0;
+            }
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
+                var ocopy = new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null);
+                ++ILGenerator.TmpCounter;
+                if (Operator.Value == "!")
+                {
+                    if (Expression is ASTArrayAccess aa)
+                    {
+                        aa.ILGenerate(ILProgram, null);
+                        ILProgram.Add(new QuadTuple(ILOperator.Not, ILProgram.Last().LValue, null,
+                            new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null)));
+                        ++ILGenerator.TmpCounter;
+                    }
+                    else if (Expression is ASTIdentifier id)
+                    {
+                        var original = new ILIdentifier(id.Value, ILNameType.Var, null);
+                        ILProgram.Add(new QuadTuple(ILOperator.Not, original, null,
+                            new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null)));
+                        ++ILGenerator.TmpCounter;
+                    }
+                }
+                else if (Operator.Value == "--")
+                {
+                    if (Expression is ASTArrayAccess aa)
+                    {
+                        aa.ILGenerate(ILProgram, null);
+                        ILProgram.Add(new QuadTuple(ILOperator.Decrease, null, null, ILProgram.Last().LValue));
+                    }
+                    else if (Expression is ASTIdentifier id)
+                    {
+                        var original = new ILIdentifier(id.Value, ILNameType.Var, null);
+                        ILProgram.Add(new QuadTuple(ILOperator.Decrease, null, null, original));
+                    }
+                }
+                else if (Operator.Value == "++")
+                {
+                    if (Expression is ASTArrayAccess aa)
+                    {
+                        aa.ILGenerate(ILProgram, null);
+                        ILProgram.Add(new QuadTuple(ILOperator.Increase, null, null, ILProgram.Last().LValue));
+                    }
+                    else if (Expression is ASTIdentifier id)
+                    {
+                        var original = new ILIdentifier(id.Value, ILNameType.Var, null);
+                        ILProgram.Add(new QuadTuple(ILOperator.Increase, null, null, original));
+                    }
+                }
+                else if (Operator.Value == "&")
+                {
+                    if (Expression is ASTArrayAccess aa)
+                    {
+                        aa.ILGenerate(ILProgram, null);
+                        ILProgram.Last().Operator = ILOperator.LoadAddress;
+                    }
+                    else if (Expression is ASTIdentifier id)
+                    {
+                        var original = new ILIdentifier(id.Value, ILNameType.Var, null);
+                        ILProgram.Add(new QuadTuple(ILOperator.LoadAddress, null, null, original));
+                    }
+                }
+            }
+        }
+        public partial class ASTBreakStatement : ASTStatement
+        {
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+            {
+                if (!earg.isInLoop)
+                {
+                    Console.WriteLine(SemanticErrors.VCE0003);
+                    Semantica.HasError = 1;
+                }
+                return 0;
+            }
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
+                ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, ILGenerator.LoopBreakStack.Peek().LValue));
+            }
+        }
+        public partial class ASTContinueStatement : ASTStatement
+        {
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+            {
+                if (!earg.isInLoop)
+                {
+                    Console.WriteLine(SemanticErrors.VCE0007);
+                    Semantica.HasError = 1;
+                }
+                return 0;
+            }
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
+                ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, ILGenerator.LoopContinueStack.Peek().LValue));
+            }
+        }
+        public partial class ASTReturnStatement : ASTStatement
+        {
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
+                if (Expression is not null)
+                {
+                    if (Expression[0] is ASTIdentifier id)
+                    {
+                        ILProgram.Add(new QuadTuple(ILOperator.Return, null, null,
+                            new ILIdentifier(id.Value, ILNameType.Var, null)));
+                    }
+                    else if (Expression[0] is ASTConstant cst)
+                    {
+                        var ret = new QuadTuple(ILOperator.Return, null, null,
+                            null);
+                        ret.InjectConstant(cst, 2);
+                        ILProgram.Add(ret);
                     }
                     else
                     {
-                        be.ILGenerate(ILProgram, null);
-                        ILProgram.Add(new QuadTuple(ILOperator.Je,
-                            ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
+                        Expression[0].ILGenerate(ILProgram, null);
+                        ILProgram.Add(new QuadTuple(ILOperator.Return, null, null, ILProgram.Last().LValue));
                     }
                 }
                 else
                 {
-                    Condition[0].ILGenerate(ILProgram, null);
-                    ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
+                    ILProgram.Add(new QuadTuple(ILOperator.Return, null, null, null));
                 }
             }
-            var body = (Stat as ASTCompoundStatement).BlockItems;
-            foreach (var i in body)
-            {
-                i.ILGenerate(ILProgram, "loop");
-            }
-            ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpStep.LValue));
-            ILProgram.Add(jmpEnd);
-            ILGenerator.LoopBreakStack.Pop();
-            ILGenerator.LoopContinueStack.Pop();
         }
-    }
-    public partial class ASTIterationStatement : ASTStatement
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+        public partial class ASTExpressionStatement : ASTStatement
         {
-            var lpST = new STLoopItem()
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
             {
-                LPT = new Dictionary<string, STItem>()
-            };
-            earg.Loops.AddLast(lpST);
-            Initilize?[0].AOTCheck(GST, LST, earg);
-            Condition?[0].AOTCheck(GST, LST, earg);
-            Step?[0].AOTCheck(GST, LST, earg);
-            earg.isInLoop = true;
-            foreach (var i in (Stat as ASTCompoundStatement)?.BlockItems)
-            {
-                i.AOTCheck(GST, LST, earg);
-            }
-            if (earg.Loops.Count <= 1) earg.isInLoop = false;
-            earg.Loops.RemoveLast();
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            var jmpCond = new QuadTuple(ILOperator.JmpTarget, null, null,
-                new ILIdentifier("@Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
-            ++ILGenerator.TmpCounter;
-            var jmpEnd = new QuadTuple(ILOperator.JmpTarget, null, null,
-                new ILIdentifier("@Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
-            ILGenerator.LoopBreakStack.Push(jmpEnd);
-            ++ILGenerator.TmpCounter;
-            var jmpStep = new QuadTuple(ILOperator.JmpTarget, null, null,
-                new ILIdentifier("@Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
-            ++ILGenerator.TmpCounter;
-            ILGenerator.LoopContinueStack.Push(jmpStep);
-            if (Initilize is not null)
-            {
-                Initilize[0].ILGenerate(ILProgram, "loop");
-            }
-            ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpCond.LValue));
-            ILProgram.Add(jmpStep);
-            if (Step is not null)
-            {
-                Step[0].ILGenerate(ILProgram, null);
-                ILProgram.MergePostfix();
-            }
-            ILProgram.Add(jmpCond);
-            if (Condition is not null)
-            {
-                if (Condition[0] is ASTBinaryExpression be)
+                foreach (var i in Expressions)
                 {
-                    if (be.Operator.Value == "&&")
-                    {
-                        be.Expr1.ILGenerate(ILProgram, null);
-                        ILProgram.Add(new QuadTuple(ILOperator.Jne,
-                            ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
-                        be.Expr2.ILGenerate(ILProgram, null);
-                    }
-                    else if (be.Operator.Value == "||")
-                    {
-                        be.Expr1.ILGenerate(ILProgram, null);
-                        ILProgram.Add(new QuadTuple(ILOperator.Je,
-                            ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
-                        be.Expr2.ILGenerate(ILProgram, null);
-                    }
-                    else
-                    {
-                        be.ILGenerate(ILProgram, null);
-                        ILProgram.Add(new QuadTuple(ILOperator.Je,
-                            ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
-                    }
+                    i.AOTCheck(GST, LST, earg);
                 }
-                else
+                return 0;
+            }
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
+                Expressions[0].ILGenerate(ILProgram, DeclarationType);
+            }
+        }
+        public partial class ASTIterationDeclaredStatement : ASTStatement
+        {
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+            {
+                var lpST = new STLoopItem()
                 {
-                    Condition[0].ILGenerate(ILProgram, null);
-                    ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
+                    LPT = new Dictionary<string, STItem>()
+                };
+                earg.Loops.AddLast(lpST);
+                Initilize?.AOTCheck(GST, LST, earg);
+                Condition?[0].AOTCheck(GST, LST, earg);
+                Step?[0].AOTCheck(GST, LST, earg);
+                earg.isInLoop = true;
+                foreach (var i in (Stat as ASTCompoundStatement)?.BlockItems)
+                {
+                    i.AOTCheck(GST, LST, earg);
                 }
+                if (earg.Loops.Count <= 1) earg.isInLoop = false;
+                earg.Loops.RemoveLast();
+                return 0;
             }
-            var body = (Stat as ASTCompoundStatement).BlockItems;
-            foreach (var i in body)
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
             {
-                i.ILGenerate(ILProgram, "loop");
-            }
-            ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpStep.LValue));
-            ILProgram.Add(jmpEnd);
-            ILGenerator.LoopBreakStack.Pop();
-            ILGenerator.LoopContinueStack.Pop();
-        }
-    }
-    public partial class ASTSelectionStatement : ASTStatement
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            Condition[0].AOTCheck(GST, LST, earg);
-            Then?.AOTCheck(GST, LST, earg);
-            Otherwise?.AOTCheck(GST, LST, earg);
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            var jmpEnd = new QuadTuple(ILOperator.JmpTarget, null, null, new ILIdentifier("Select" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
-            ++ILGenerator.TmpCounter;
-            var jmpThen = new QuadTuple(ILOperator.JmpTarget, null, null, new ILIdentifier("Select" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
-            ++ILGenerator.TmpCounter;
-            if (Condition is not null)
-            {
-                if (Condition[0] is ASTBinaryExpression be)
+                var jmpCond = new QuadTuple(ILOperator.JmpTarget, null, null,
+                    new ILIdentifier("@Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
+                ++ILGenerator.TmpCounter;
+                var jmpEnd = new QuadTuple(ILOperator.JmpTarget, null, null,
+                    new ILIdentifier("@Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
+                ILGenerator.LoopBreakStack.Push(jmpEnd);
+                ++ILGenerator.TmpCounter;
+                var jmpStep = new QuadTuple(ILOperator.JmpTarget, null, null,
+                    new ILIdentifier("@Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
+                ++ILGenerator.TmpCounter;
+                ILGenerator.LoopContinueStack.Push(jmpStep);
+                if (Initilize is not null)
                 {
-                    if (be.Expr1 is ASTIdentifier id)
+                    Initilize.ILGenerate(ILProgram, "loop");
+                }
+                ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpCond.LValue));
+                ILProgram.Add(jmpStep);
+                if (Step is not null)
+                {
+                    Step[0].ILGenerate(ILProgram, null);
+                    ILProgram.MergePostfix();
+                }
+                ILProgram.Add(jmpCond);
+                if (Condition is not null)
+                {
+                    if (Condition[0] is ASTBinaryExpression be)
                     {
-                        var e1 = new ILIdentifier(id.Value, ILNameType.Var, null);
                         if (be.Operator.Value == "&&")
                         {
+                            be.Expr1.ILGenerate(ILProgram, null);
+                            ILProgram.Add(new QuadTuple(ILOperator.Jne,
+                                ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
+                            be.Expr2.ILGenerate(ILProgram, null);
+                        }
+                        else if (be.Operator.Value == "||")
+                        {
+                            be.Expr1.ILGenerate(ILProgram, null);
                             ILProgram.Add(new QuadTuple(ILOperator.Je,
-                                new ILIdentifier("0", ILNameType.Constant, "int"), e1, jmpThen.LValue));
+                                ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
+                            be.Expr2.ILGenerate(ILProgram, null);
                         }
                         else
                         {
+                            be.ILGenerate(ILProgram, null);
                             ILProgram.Add(new QuadTuple(ILOperator.Je,
-                                new ILIdentifier("1", ILNameType.Constant, "int"), e1, jmpThen.LValue));
+                                ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
                         }
-                    }
-                    else
-                    {
-                        be.Expr1.ILGenerate(ILProgram, null);
-                        if (be.Operator.Value == "&&")
-                        {
-                            ILProgram.Add(new QuadTuple(ILOperator.Je,
-                                new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpThen.LValue));
-                        }
-                        else
-                        {
-                            ILProgram.Add(new QuadTuple(ILOperator.Je,
-                                new ILIdentifier("1", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpThen.LValue));
-                        }
-                    }
-                    if (be.Expr2 is ASTIdentifier id2)
-                    {
-                        var e2 = new ILIdentifier(id2.Value, ILNameType.Var, null);
-                        if (be.Operator.Value == "&&")
-                        {
-                            ILProgram.Add(new QuadTuple(ILOperator.Je,
-                                new ILIdentifier("0", ILNameType.Constant, "int"), e2, jmpThen.LValue));
-                        }
-                        else
-                        {
-                            ILProgram.Add(new QuadTuple(ILOperator.Je,
-                                new ILIdentifier("1", ILNameType.Constant, "int"), e2, jmpThen.LValue));
-                        }
-                    }
-                    else
-                    {
-                        be.Expr2.ILGenerate(ILProgram, null);
-                        if (be.Operator.Value == "&&")
-                        {
-                            ILProgram.Add(new QuadTuple(ILOperator.Je,
-                                new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
-                        }
-                        else
-                        {
-                            ILProgram.Add(new QuadTuple(ILOperator.Je,
-                                new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
-                            ILProgram.Add(jmpThen);
-                        }
-                    }
-                }
-                else
-                {
-                    if (Condition[0] is ASTIdentifier id)
-                    {
-                        ILProgram.Add(new QuadTuple(ILOperator.Je,
-                            new ILIdentifier("0", ILNameType.Constant, "int"),
-                            new ILIdentifier(id.Value, ILNameType.Var, null), jmpEnd.LValue));
                     }
                     else
                     {
                         Condition[0].ILGenerate(ILProgram, null);
                         ILProgram.Add(new QuadTuple(ILOperator.Je,
-                            new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                            ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
                     }
                 }
-            }
-            Then?.ILGenerate(ILProgram, "selection");
-            ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpEnd.LValue));
-            ILProgram.Add(jmpThen);
-            Otherwise?.ILGenerate(ILProgram, "selection");
-            ILProgram.Add(jmpEnd);
-        }
-    }
-    public partial class ASTCompoundStatement : ASTStatement
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            foreach (var i in BlockItems)
-            {
-                i.AOTCheck(GST, LST, earg);
-            }
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            foreach (var i in BlockItems)
-            {
-                i.ILGenerate(ILProgram, null);
+                var body = (Stat as ASTCompoundStatement).BlockItems;
+                foreach (var i in body)
+                {
+                    i.ILGenerate(ILProgram, "loop");
+                }
+                ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpStep.LValue));
+                ILProgram.Add(jmpEnd);
+                ILGenerator.LoopBreakStack.Pop();
+                ILGenerator.LoopContinueStack.Pop();
             }
         }
-    }
-    public partial class ASTArrayDeclarator : ASTDeclarator
-    {
-        [JsonIgnore]
-        private string VType { get; set; }
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+        public partial class ASTIterationStatement : ASTStatement
         {
-            VType = earg.VType;
-            if (Declarator is ASTArrayDeclarator aDecl)
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
             {
-                earg.MultiDimArray = new Stack<int>();
-                earg.MultiDimArray.Push((Expression as ASTIntegerConstant).Value);
-                aDecl.AOTCheck(GST, LST, earg);
+                var lpST = new STLoopItem()
+                {
+                    LPT = new Dictionary<string, STItem>()
+                };
+                earg.Loops.AddLast(lpST);
+                Initilize?[0].AOTCheck(GST, LST, earg);
+                Condition?[0].AOTCheck(GST, LST, earg);
+                Step?[0].AOTCheck(GST, LST, earg);
+                earg.isInLoop = true;
+                foreach (var i in (Stat as ASTCompoundStatement)?.BlockItems)
+                {
+                    i.AOTCheck(GST, LST, earg);
+                }
+                if (earg.Loops.Count <= 1) earg.isInLoop = false;
+                earg.Loops.RemoveLast();
+                return 0;
             }
-            else
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
             {
-                var arrName = (Declarator as ASTVariableDeclarator).Identifier.Value;
-                earg.MultiDimArray.Push((Expression as ASTIntegerConstant).Value);
+                var jmpCond = new QuadTuple(ILOperator.JmpTarget, null, null,
+                    new ILIdentifier("@Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
+                ++ILGenerator.TmpCounter;
+                var jmpEnd = new QuadTuple(ILOperator.JmpTarget, null, null,
+                    new ILIdentifier("@Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
+                ILGenerator.LoopBreakStack.Push(jmpEnd);
+                ++ILGenerator.TmpCounter;
+                var jmpStep = new QuadTuple(ILOperator.JmpTarget, null, null,
+                    new ILIdentifier("@Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
+                ++ILGenerator.TmpCounter;
+                ILGenerator.LoopContinueStack.Push(jmpStep);
+                if (Initilize is not null)
+                {
+                    Initilize[0].ILGenerate(ILProgram, "loop");
+                }
+                ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpCond.LValue));
+                ILProgram.Add(jmpStep);
+                if (Step is not null)
+                {
+                    Step[0].ILGenerate(ILProgram, null);
+                    ILProgram.MergePostfix();
+                }
+                ILProgram.Add(jmpCond);
+                if (Condition is not null)
+                {
+                    if (Condition[0] is ASTBinaryExpression be)
+                    {
+                        if (be.Operator.Value == "&&")
+                        {
+                            be.Expr1.ILGenerate(ILProgram, null);
+                            ILProgram.Add(new QuadTuple(ILOperator.Jne,
+                                ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
+                            be.Expr2.ILGenerate(ILProgram, null);
+                        }
+                        else if (be.Operator.Value == "||")
+                        {
+                            be.Expr1.ILGenerate(ILProgram, null);
+                            ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
+                            be.Expr2.ILGenerate(ILProgram, null);
+                        }
+                        else
+                        {
+                            be.ILGenerate(ILProgram, null);
+                            ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
+                        }
+                    }
+                    else
+                    {
+                        Condition[0].ILGenerate(ILProgram, null);
+                        ILProgram.Add(new QuadTuple(ILOperator.Je,
+                            ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
+                    }
+                }
+                var body = (Stat as ASTCompoundStatement).BlockItems;
+                foreach (var i in body)
+                {
+                    i.ILGenerate(ILProgram, "loop");
+                }
+                ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpStep.LValue));
+                ILProgram.Add(jmpEnd);
+                ILGenerator.LoopBreakStack.Pop();
+                ILGenerator.LoopContinueStack.Pop();
+            }
+        }
+        public partial class ASTSelectionStatement : ASTStatement
+        {
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+            {
+                Condition[0].AOTCheck(GST, LST, earg);
+                Then?.AOTCheck(GST, LST, earg);
+                Otherwise?.AOTCheck(GST, LST, earg);
+                return 0;
+            }
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
+                var jmpEnd = new QuadTuple(ILOperator.JmpTarget, null, null, new ILIdentifier("Select" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
+                ++ILGenerator.TmpCounter;
+                var jmpThen = new QuadTuple(ILOperator.JmpTarget, null, null, new ILIdentifier("Select" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
+                ++ILGenerator.TmpCounter;
+                if (Condition is not null)
+                {
+                    if (Condition[0] is ASTBinaryExpression be)
+                    {
+                        if (be.Expr1 is ASTIdentifier id)
+                        {
+                            var e1 = new ILIdentifier(id.Value, ILNameType.Var, null);
+                            if (be.Operator.Value == "&&")
+                            {
+                                ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                    new ILIdentifier("0", ILNameType.Constant, "int"), e1, jmpThen.LValue));
+                            }
+                            else
+                            {
+                                ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                    new ILIdentifier("1", ILNameType.Constant, "int"), e1, jmpThen.LValue));
+                            }
+                        }
+                        else
+                        {
+                            be.Expr1.ILGenerate(ILProgram, null);
+                            if (be.Operator.Value == "&&")
+                            {
+                                ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                    new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpThen.LValue));
+                            }
+                            else
+                            {
+                                ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                    new ILIdentifier("1", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpThen.LValue));
+                            }
+                        }
+                        if (be.Expr2 is ASTIdentifier id2)
+                        {
+                            var e2 = new ILIdentifier(id2.Value, ILNameType.Var, null);
+                            if (be.Operator.Value == "&&")
+                            {
+                                ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                    new ILIdentifier("0", ILNameType.Constant, "int"), e2, jmpThen.LValue));
+                            }
+                            else
+                            {
+                                ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                    new ILIdentifier("1", ILNameType.Constant, "int"), e2, jmpThen.LValue));
+                            }
+                        }
+                        else
+                        {
+                            be.Expr2.ILGenerate(ILProgram, null);
+                            if (be.Operator.Value == "&&")
+                            {
+                                ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                    new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                            }
+                            else
+                            {
+                                ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                    new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                                ILProgram.Add(jmpThen);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (Condition[0] is ASTIdentifier id)
+                        {
+                            ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                new ILIdentifier("0", ILNameType.Constant, "int"),
+                                new ILIdentifier(id.Value, ILNameType.Var, null), jmpEnd.LValue));
+                        }
+                        else
+                        {
+                            Condition[0].ILGenerate(ILProgram, null);
+                            ILProgram.Add(new QuadTuple(ILOperator.Je,
+                                new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
+                        }
+                    }
+                }
+                Then?.ILGenerate(ILProgram, "selection");
+                ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpEnd.LValue));
+                ILProgram.Add(jmpThen);
+                Otherwise?.ILGenerate(ILProgram, "selection");
+                ILProgram.Add(jmpEnd);
+            }
+        }
+        public partial class ASTCompoundStatement : ASTStatement
+        {
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+            {
+                foreach (var i in BlockItems)
+                {
+                    i.AOTCheck(GST, LST, earg);
+                }
+                return 0;
+            }
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
+                foreach (var i in BlockItems)
+                {
+                    i.ILGenerate(ILProgram, null);
+                }
+            }
+        }
+        public partial class ASTArrayDeclarator : ASTDeclarator
+        {
+            [JsonIgnore]
+            private string VType { get; set; }
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+            {
+                VType = earg.VType;
+                if (Declarator is ASTArrayDeclarator aDecl)
+                {
+                    earg.MultiDimArray = new Stack<int>();
+                    earg.MultiDimArray.Push((Expression as ASTIntegerConstant).Value);
+                    aDecl.AOTCheck(GST, LST, earg);
+                }
+                else
+                {
+                    var arrName = (Declarator as ASTVariableDeclarator).Identifier.Value;
+                    earg.MultiDimArray.Push((Expression as ASTIntegerConstant).Value);
+                    if (earg.Loops.Count > 0)
+                    {
+                        if (earg.Loops.Last.Value.LPT.ContainsKey(arrName))
+                        {
+                            Console.WriteLine(SemanticErrors.VCE0001, arrName);
+                            Semantica.HasError = 1;
+                        }
+                        else
+                        {
+                            var dims = new List<int>();
+                            while (earg.MultiDimArray.Count > 0)
+                            {
+                                dims.Add(earg.MultiDimArray.Pop());
+                            }
+                            earg.Loops.Last.Value.LPT.Add(arrName, new STArrayItem(arrName, dims, earg.VType));
+                        }
+                    }
+                    else
+                    {
+                        if (LST is not null)
+                        {
+                            if (LST.ContainsKey(arrName))
+                            {
+                                Console.WriteLine(SemanticErrors.VCE0001, arrName);
+                                Semantica.HasError = 1;
+                            }
+                            else
+                            {
+                                var dims = new List<int>();
+                                while (earg.MultiDimArray.Count > 0)
+                                {
+                                    dims.Add(earg.MultiDimArray.Pop());
+                                }
+                                LST.Add(arrName, new STArrayItem(arrName, dims, earg.VType));
+                            }
+                        }
+                        else
+                        {
+                            if (GST.ContainsKey(arrName))
+                            {
+                                Console.WriteLine(SemanticErrors.VCE0001, arrName);
+                                Semantica.HasError = 1;
+                            }
+                            else
+                            {
+                                var dims = new List<int>();
+                                while (earg.MultiDimArray.Count > 0)
+                                {
+                                    dims.Add(earg.MultiDimArray.Pop());
+                                }
+                                GST.Add(arrName, new STArrayItem(arrName, dims, earg.VType));
+                                Semantica.HasError = 1;
+                            }
+                        }
+                    }
+                }
+                return 0;
+            }
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+            {
+                var len = (Expression as ASTIntegerConstant).Value;
+                var name = "";
+                if (Declarator is ASTArrayDeclarator ad)
+                {
+                    len *= (ad.Expression as ASTIntegerConstant).Value;
+                    name = (ad.Declarator as ASTVariableDeclarator).Identifier.Value;
+                }
+                else
+                {
+                    name = (Declarator as ASTVariableDeclarator).Identifier.Value;
+                }
+                if (DeclarationType == "global")
+                {
+                    ILProgram.Insert(1, new QuadTuple(ILOperator.ArrayDefine,
+                        new ILIdentifier(len.ToString(), ILNameType.Constant, "int"), null,
+                        new ILIdentifier(name, ILNameType.Array, VType)));
+                }
+                else
+                {
+                    ILProgram.Add(new QuadTuple(ILOperator.ArrayDefine,
+                        new ILIdentifier(len.ToString(), ILNameType.Constant, "int"), null,
+                        new ILIdentifier(name, ILNameType.Array, VType)));
+                }
+            }
+        }
+        public partial class ASTVariableDeclarator : ASTDeclarator
+        {
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
+            {
+                var id = Identifier.Value;
                 if (earg.Loops.Count > 0)
                 {
-                    if (earg.Loops.Last.Value.LPT.ContainsKey(arrName))
+                    if (earg.Loops.Last.Value.LPT.ContainsKey(id))
                     {
-                        Console.WriteLine(SemanticErrors.VCE0001, arrName);
+                        Console.WriteLine(SemanticErrors.VCE0001, id);
                         Semantica.HasError = 1;
                     }
                     else
                     {
-                        var dims = new List<int>();
-                        while (earg.MultiDimArray.Count > 0)
-                        {
-                            dims.Add(earg.MultiDimArray.Pop());
-                        }
-                        earg.Loops.Last.Value.LPT.Add(arrName, new STArrayItem(arrName, dims, earg.VType));
+                        earg.Loops.Last.Value.LPT.Add(id, new STVariableItem(id, earg.VType));
                     }
                 }
                 else
                 {
                     if (LST is not null)
                     {
-                        if (LST.ContainsKey(arrName))
+                        if (LST.ContainsKey(id))
                         {
-                            Console.WriteLine(SemanticErrors.VCE0001, arrName);
+                            Console.WriteLine(SemanticErrors.VCE0001, id);
                             Semantica.HasError = 1;
                         }
                         else
                         {
-                            var dims = new List<int>();
-                            while (earg.MultiDimArray.Count > 0)
-                            {
-                                dims.Add(earg.MultiDimArray.Pop());
-                            }
-                            LST.Add(arrName, new STArrayItem(arrName, dims, earg.VType));
+                            LST.Add(id, new STVariableItem(id, earg.VType));
                         }
                     }
                     else
                     {
-                        if (GST.ContainsKey(arrName))
+                        if (GST.ContainsKey(id))
                         {
-                            Console.WriteLine(SemanticErrors.VCE0001, arrName);
+                            Console.WriteLine(SemanticErrors.VCE0001, id);
                             Semantica.HasError = 1;
                         }
                         else
                         {
-                            var dims = new List<int>();
-                            while (earg.MultiDimArray.Count > 0)
-                            {
-                                dims.Add(earg.MultiDimArray.Pop());
-                            }
-                            GST.Add(arrName, new STArrayItem(arrName, dims, earg.VType));
-                            Semantica.HasError = 1;
+                            GST.Add(id, new STVariableItem(id, earg.VType));
                         }
                     }
                 }
+                return 0;
             }
-            return 0;
-        }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
-        {
-            var len = (Expression as ASTIntegerConstant).Value;
-            var name = "";
-            if (Declarator is ASTArrayDeclarator ad)
+            public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
             {
-                len *= (ad.Expression as ASTIntegerConstant).Value;
-                name = (ad.Declarator as ASTVariableDeclarator).Identifier.Value;
-            }
-            else
-            {
-                name = (Declarator as ASTVariableDeclarator).Identifier.Value;
-            }
-            if (DeclarationType == "global")
-            {
-                ILProgram.Insert(1, new QuadTuple(ILOperator.ArrayDefine,
-                    new ILIdentifier(len.ToString(), ILNameType.Constant, "int"), null,
-                    new ILIdentifier(name, ILNameType.Array, VType)));
-            }
-            else
-            {
-                ILProgram.Add(new QuadTuple(ILOperator.ArrayDefine,
-                    new ILIdentifier(len.ToString(), ILNameType.Constant, "int"), null,
-                    new ILIdentifier(name, ILNameType.Array, VType)));
-            }
-        }
-    }
-    public partial class ASTVariableDeclarator : ASTDeclarator
-    {
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            var id = Identifier.Value;
-            if (earg.Loops.Count > 0)
-            {
-                if (earg.Loops.Last.Value.LPT.ContainsKey(id))
+                var name = Identifier.Value;
+                var qt = new QuadTuple(ILOperator.VarDefine, null, null,
+                    new ILIdentifier(name, ILNameType.Var, DeclarationType));
+                if (DeclarationType == "global")
                 {
-                    Console.WriteLine(SemanticErrors.VCE0001, id);
-                    Semantica.HasError = 1;
+                    ILProgram.Insert(1, qt);
                 }
                 else
                 {
-                    earg.Loops.Last.Value.LPT.Add(id, new STVariableItem(id, earg.VType));
+                    ILProgram.Add(qt);
                 }
             }
-            else
-            {
-                if (LST is not null)
-                {
-                    if (LST.ContainsKey(id))
-                    {
-                        Console.WriteLine(SemanticErrors.VCE0001, id);
-                        Semantica.HasError = 1;
-                    }
-                    else
-                    {
-                        LST.Add(id, new STVariableItem(id, earg.VType));
-                    }
-                }
-                else
-                {
-                    if (GST.ContainsKey(id))
-                    {
-                        Console.WriteLine(SemanticErrors.VCE0001, id);
-                        Semantica.HasError = 1;
-                    }
-                    else
-                    {
-                        GST.Add(id, new STVariableItem(id, earg.VType));
-                    }
-                }
-            }
-            return 0;
         }
-        public override void ILGenerate(List<QuadTuple> ILProgram, string DeclarationType)
+        public partial class ASTFunctionDeclarator : ASTDeclarator
         {
-            var name = Identifier.Value;
-            var qt = new QuadTuple(ILOperator.VarDefine, null, null,
-                new ILIdentifier(name, ILNameType.Var, DeclarationType));
-            if (DeclarationType == "global")
+            //global func define
+            public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
             {
-                ILProgram.Insert(1, qt);
-            }
-            else
-            {
-                ILProgram.Add(qt);
+                var fName = (Declarator as ASTVariableDeclarator).Identifier.Value;
+                var fDef = new STFunctionItem(fName, earg.VType, null, null);
+                return 0;
             }
         }
     }
-    public partial class ASTFunctionDeclarator : ASTDeclarator
-    {
-        //global func define
-        public override int AOTCheck(Dictionary<string, STItem> GST, Dictionary<string, STItem> LST, AOTCheckExtraArg earg)
-        {
-            var fName = (Declarator as ASTVariableDeclarator).Identifier.Value;
-            var fDef = new STFunctionItem(fName, earg.VType, null, null);
-            return 0;
-        }
-    }
+
 }

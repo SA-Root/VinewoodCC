@@ -2,7 +2,7 @@
 using System.IO;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using VinewoodCC;
+using VinewoodCC.AST;
 
 namespace ParserSharp
 {

@@ -2,209 +2,213 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
+using VinewoodCC.AST;
 
 namespace VinewoodCC
 {
-    public static class ILProgramExtension
+    namespace ILGen
     {
-        public static void MergePostfix(this List<QuadTuple> ILProgram)
+        public static class ILProgramExtension
         {
-            if (ILGenerator.PostfixCache.Count > 0)
+            public static void MergePostfix(this List<QuadTuple> ILProgram)
             {
-                ILProgram.AddRange(ILGenerator.PostfixCache);
-                ILGenerator.PostfixCache.Clear();
-            }
-        }
-        public static void InjectConstant(this QuadTuple qt, ASTConstant constant, int isRValue, ILIdentifier str = null)
-        {
-            if (constant is ASTStringConstant sc)
-            {
-                if (isRValue == 0)
+                if (ILGenerator.PostfixCache.Count > 0)
                 {
-                    qt.RValueA = str;
-                }
-                else if (isRValue == 1)
-                {
-                    qt.RValueB = str;
-                }
-                else
-                {
-                    qt.LValue = str;
+                    ILProgram.AddRange(ILGenerator.PostfixCache);
+                    ILGenerator.PostfixCache.Clear();
                 }
             }
-            else if (constant is ASTIntegerConstant ic)
+            public static void InjectConstant(this QuadTuple qt, ASTConstant constant, int isRValue, ILIdentifier str = null)
             {
-                if (isRValue == 0)
+                if (constant is ASTStringConstant sc)
                 {
-                    qt.RValueA = new ILIdentifier(ic.Value.ToString(), ILNameType.Constant, "int");
-                }
-                else if (isRValue == 1)
-                {
-                    qt.RValueB = new ILIdentifier(ic.Value.ToString(), ILNameType.Constant, "int");
-                }
-                else
-                {
-                    qt.LValue = new ILIdentifier(ic.Value.ToString(), ILNameType.Constant, "int");
-                }
-            }
-            else if (constant is ASTFloatConstant fp)
-            {
-                if (isRValue == 0)
-                {
-                    qt.RValueA = new ILIdentifier(fp.Value.ToString(), ILNameType.Constant, "float");
-                }
-                else if (isRValue == 1)
-                {
-                    qt.RValueB = new ILIdentifier(fp.Value.ToString(), ILNameType.Constant, "float");
-                }
-                else
-                {
-                    qt.LValue = new ILIdentifier(fp.Value.ToString(), ILNameType.Constant, "float");
-                }
-            }
-            else if (constant is ASTCharConstant cc)
-            {
-                if (isRValue == 0)
-                {
-                    qt.RValueA = new ILIdentifier(cc.Value.ToString(), ILNameType.Constant, "char");
-                }
-                else if (isRValue == 1)
-                {
-                    qt.RValueB = new ILIdentifier(cc.Value.ToString(), ILNameType.Constant, "char");
-                }
-                else
-                {
-                    qt.LValue = new ILIdentifier(cc.Value.ToString(), ILNameType.Constant, "char");
-                }
-            }
-        }
-        public static QuadTuple Last(this List<QuadTuple> ILProgram)
-        => ILProgram[ILProgram.Count - 1];
-        public static void PrintToConsole(this List<QuadTuple> ILProgram)
-        {
-            foreach (var i in ILProgram)
-            {
-                Console.Write("({0},", i.Operator);
-                if (i.RValueA is not null) Console.Write(i.RValueA.ID);
-                Console.Write(",");
-                if (i.RValueB is not null) Console.Write(i.RValueB.ID);
-                Console.Write(",");
-                if (i.LValue is not null) Console.Write(i.LValue.ID);
-                Console.Write(")\n");
-            }
-        }
-        public static void OutputQuadTuple(this List<QuadTuple> ILProgram, string path)
-        {
-            try
-            {
-                var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
-                using (var writer = new StreamWriter(stream))
-                {
-                    foreach (var i in ILProgram)
+                    if (isRValue == 0)
                     {
-                        writer.Write("({0},", i.Operator);
-                        if (i.RValueA is not null) writer.Write(i.RValueA.ID);
-                        writer.Write(",");
-                        if (i.RValueB is not null) writer.Write(i.RValueB.ID);
-                        writer.Write(",");
-                        if (i.LValue is not null) writer.Write(i.LValue.ID);
-                        writer.Write(")\n");
+                        qt.RValueA = str;
+                    }
+                    else if (isRValue == 1)
+                    {
+                        qt.RValueB = str;
+                    }
+                    else
+                    {
+                        qt.LValue = str;
+                    }
+                }
+                else if (constant is ASTIntegerConstant ic)
+                {
+                    if (isRValue == 0)
+                    {
+                        qt.RValueA = new ILIdentifier(ic.Value.ToString(), ILNameType.Constant, "int");
+                    }
+                    else if (isRValue == 1)
+                    {
+                        qt.RValueB = new ILIdentifier(ic.Value.ToString(), ILNameType.Constant, "int");
+                    }
+                    else
+                    {
+                        qt.LValue = new ILIdentifier(ic.Value.ToString(), ILNameType.Constant, "int");
+                    }
+                }
+                else if (constant is ASTFloatConstant fp)
+                {
+                    if (isRValue == 0)
+                    {
+                        qt.RValueA = new ILIdentifier(fp.Value.ToString(), ILNameType.Constant, "float");
+                    }
+                    else if (isRValue == 1)
+                    {
+                        qt.RValueB = new ILIdentifier(fp.Value.ToString(), ILNameType.Constant, "float");
+                    }
+                    else
+                    {
+                        qt.LValue = new ILIdentifier(fp.Value.ToString(), ILNameType.Constant, "float");
+                    }
+                }
+                else if (constant is ASTCharConstant cc)
+                {
+                    if (isRValue == 0)
+                    {
+                        qt.RValueA = new ILIdentifier(cc.Value.ToString(), ILNameType.Constant, "char");
+                    }
+                    else if (isRValue == 1)
+                    {
+                        qt.RValueB = new ILIdentifier(cc.Value.ToString(), ILNameType.Constant, "char");
+                    }
+                    else
+                    {
+                        qt.LValue = new ILIdentifier(cc.Value.ToString(), ILNameType.Constant, "char");
                     }
                 }
             }
-            catch (Exception e)
+            public static QuadTuple Last(this List<QuadTuple> ILProgram)
+            => ILProgram[ILProgram.Count - 1];
+            public static void PrintToConsole(this List<QuadTuple> ILProgram)
             {
-                Console.WriteLine(e.StackTrace);
-                Console.WriteLine($"Could not write file: {path}");
-            }
-        }
-        public static void OutputJson(this List<QuadTuple> ILProgram, string path)
-        {
-            try
-            {
-                var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
-                using (var writer = new StreamWriter(stream))
+                foreach (var i in ILProgram)
                 {
-                    var jsonIR = JsonConvert.SerializeObject(ILProgram, Formatting.Indented);
-                    writer.Write(jsonIR);
+                    Console.Write("({0},", i.Operator);
+                    if (i.RValueA is not null) Console.Write(i.RValueA.ID);
+                    Console.Write(",");
+                    if (i.RValueB is not null) Console.Write(i.RValueB.ID);
+                    Console.Write(",");
+                    if (i.LValue is not null) Console.Write(i.LValue.ID);
+                    Console.Write(")\n");
                 }
             }
-            catch (Exception e)
+            public static void OutputQuadTuple(this List<QuadTuple> ILProgram, string path)
             {
-                Console.WriteLine(e.StackTrace);
-                Console.WriteLine($"Could not write file: {path}");
+                try
+                {
+                    var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
+                    using (var writer = new StreamWriter(stream))
+                    {
+                        foreach (var i in ILProgram)
+                        {
+                            writer.Write("({0},", i.Operator);
+                            if (i.RValueA is not null) writer.Write(i.RValueA.ID);
+                            writer.Write(",");
+                            if (i.RValueB is not null) writer.Write(i.RValueB.ID);
+                            writer.Write(",");
+                            if (i.LValue is not null) writer.Write(i.LValue.ID);
+                            writer.Write(")\n");
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.StackTrace);
+                    Console.WriteLine($"Could not write file: {path}");
+                }
+            }
+            public static void OutputJson(this List<QuadTuple> ILProgram, string path)
+            {
+                try
+                {
+                    var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
+                    using (var writer = new StreamWriter(stream))
+                    {
+                        var jsonIR = JsonConvert.SerializeObject(ILProgram, Formatting.Indented);
+                        writer.Write(jsonIR);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.StackTrace);
+                    Console.WriteLine($"Could not write file: {path}");
+                }
             }
         }
-    }
-    public enum ILNameType
-    {
-        Var = 0,
-        TmpVar = 1,
-        Function = 2,
-        Constant = 3,
-        Array = 4
-    }
-    public enum ILOperator
-    {
-        ArrayDefine = -4,
-        ArrayAssign = -3,//writeback to array elements
-        Push = -2,//push arg for func call
-        VarDefine = -1,//(local/global) var definition
-        Assign = 0,//=
-        DataBegin = 1,//.data
-        DataEnd = 2,//.code
-        ProcBegin = 3,//xx proc 
-        ProcEnd = 4,//xx endp
-        Call = 5,
-        Jmp = 6,
-        Je = 7,
-        Jne = 8,
-        Param = 9,// xx:type
-        Return = 10,//ret
-        JmpTarget = 11,//jmp label in asm file
-        Add = 12,//+
-        ArrayAccess = 13,//lvalue is address of the array element
-        Subtract = 14,//-
-        Multiply = 15,//*
-        Division = 16,///
-        Greater = 17,//>
-        Less = 18,//<
-        Equal = 19,//==
-        Increase = 20,//++
-        Decrease = 21,//--
-        GreaterEqual = 22,//>=
-        LessEqual = 23,//<=
-        Not = 24,//!
-        LoadAddress = 25,//&
-        PushAddr = 26
-    }
-    public class ILIdentifier
-    {
-        public string ID { get; set; }
-        public ILNameType ILNameType { get; set; }
-        //addr: target is an address
-        public string ValueType { get; set; }
-        public ILIdentifier(string id, ILNameType nt, string vt)
+        public enum ILNameType
         {
-            ID = id;
-            ILNameType = nt;
-            ValueType = vt;
+            Var = 0,
+            TmpVar = 1,
+            Function = 2,
+            Constant = 3,
+            Array = 4
         }
-        public ILIdentifier() { }
-    }
-    public class QuadTuple
-    {
-        public ILOperator Operator { get; set; }
-        public ILIdentifier RValueA { get; set; }
-        public ILIdentifier RValueB { get; set; }
-        public ILIdentifier LValue { get; set; }
-        public QuadTuple(ILOperator op, ILIdentifier rv1, ILIdentifier rv2, ILIdentifier lv)
+        public enum ILOperator
         {
-            Operator = op;
-            RValueA = rv1;
-            RValueB = rv2;
-            LValue = lv;
+            ArrayDefine = -4,
+            ArrayAssign = -3,//writeback to array elements
+            Push = -2,//push arg for func call
+            VarDefine = -1,//(local/global) var definition
+            Assign = 0,//=
+            DataBegin = 1,//.data
+            DataEnd = 2,//.code
+            ProcBegin = 3,//xx proc 
+            ProcEnd = 4,//xx endp
+            Call = 5,
+            Jmp = 6,
+            Je = 7,
+            Jne = 8,
+            Param = 9,// xx:type
+            Return = 10,//ret
+            JmpTarget = 11,//jmp label in asm file
+            Add = 12,//+
+            ArrayAccess = 13,//lvalue is address of the array element
+            Subtract = 14,//-
+            Multiply = 15,//*
+            Division = 16,///
+            Greater = 17,//>
+            Less = 18,//<
+            Equal = 19,//==
+            Increase = 20,//++
+            Decrease = 21,//--
+            GreaterEqual = 22,//>=
+            LessEqual = 23,//<=
+            Not = 24,//!
+            LoadAddress = 25,//&
+            PushAddr = 26
         }
-        public QuadTuple() { }
+        public class ILIdentifier
+        {
+            public string ID { get; set; }
+            public ILNameType ILNameType { get; set; }
+            //addr: target is an address
+            public string ValueType { get; set; }
+            public ILIdentifier(string id, ILNameType nt, string vt)
+            {
+                ID = id;
+                ILNameType = nt;
+                ValueType = vt;
+            }
+            public ILIdentifier() { }
+        }
+        public class QuadTuple
+        {
+            public ILOperator Operator { get; set; }
+            public ILIdentifier RValueA { get; set; }
+            public ILIdentifier RValueB { get; set; }
+            public ILIdentifier LValue { get; set; }
+            public QuadTuple(ILOperator op, ILIdentifier rv1, ILIdentifier rv2, ILIdentifier lv)
+            {
+                Operator = op;
+                RValueA = rv1;
+                RValueB = rv2;
+                LValue = lv;
+            }
+            public QuadTuple() { }
+        }
     }
 }
