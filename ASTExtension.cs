@@ -152,21 +152,17 @@ namespace VinewoodCC
                         ILProgram.Insert(1, last);
                         if (i.Expressions.Count > 0)
                         {
-                            var qt = new QuadTuple(ILOperator.Assign, null, null, ILProgram[1].LValue);
-                            qt.InjectConstant(i.Expressions[0] as ASTConstant, 0);
-                            ILProgram.Insert(2, qt);
+                            ILProgram[1].InjectConstant(i.Expressions[0] as ASTConstant, 0);
                         }
                     }
                     else
                     {
-                        var newvar = ILProgram.Last().LValue;
                         if (i.Expressions.Count > 0)
                         {
+                            var newvar = ILProgram.Last().LValue;
                             if (i.Expressions[0] is ASTConstant cst)
                             {
-                                var qt = new QuadTuple(ILOperator.Assign, null, null, newvar);
-                                qt.InjectConstant(i.Expressions[0] as ASTConstant, 0);
-                                ILProgram.Add(qt);
+                                ILProgram.Last().InjectConstant(i.Expressions[0] as ASTConstant, 0);
                             }
                             else
                             {
@@ -531,11 +527,10 @@ namespace VinewoodCC
                         var cst = new QuadTuple(ILOperator.Push, null, null, null);
                         if (c is ASTStringConstant sc)
                         {
-                            ILProgram.Insert(1, new QuadTuple(ILOperator.VarDefine, null, null,
+                            ILProgram.Insert(1, new QuadTuple(ILOperator.VarDefine,
+                                new ILIdentifier(sc.Value, ILNameType.Constant, "string"), null,
                                 new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "string")));
                             ++ILGenerator.TmpCounter;
-                            ILProgram.Insert(2, new QuadTuple(ILOperator.Assign, new ILIdentifier(sc.Value, ILNameType.Constant, "string"), null,
-                                ILProgram[1].LValue));
                             cst.InjectConstant(sc, 2, ILProgram[1].LValue);
                         }
                         else

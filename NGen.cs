@@ -26,7 +26,7 @@ namespace VinewoodCC
             private void ILArrayDefine(QuadTuple qt)
             {
                 var tplt = "{0} {1} {2} DUP({3})";
-                var tplt_local = "local {0}[{1}]:{2}";
+                var tplt_local = "   local {0}[{1}]:{2}";
                 var vtype = qt.LValue.ValueType;
                 var len = int.Parse(qt.RValueA.ID);
                 if (vtype == "int")
@@ -45,7 +45,7 @@ namespace VinewoodCC
             }
             private void ILArrayAssign(QuadTuple qt)
             {
-                var tplt1 = "mov eax,{0}";
+                var tplt1 = "   mov eax,{0}";
                 var offset = qt.RValueA.ID;
                 if (qt.RValueA.ValueType == "addr")
                 {
@@ -68,7 +68,7 @@ namespace VinewoodCC
                 {
                     ProcSegment.Add(string.Format(tplt1, offset));
                 }
-                var tplt2 = "mov {0},eax";
+                var tplt2 = "   mov {0},eax";
                 offset = qt.LValue.ID;
                 if (LSymbols.ContainsKey(offset))
                 {
@@ -87,14 +87,93 @@ namespace VinewoodCC
             }
             private void ILPush(QuadTuple qt)
             {
-
+                var tplt = "   push {0}";
+                ProcSegment.Add(string.Format(tplt, qt.LValue.ID));
             }
             private void ILVarDefine(QuadTuple qt)
             {
-
+                var tplt = "{0} {1} {2}";
+                var vtype = qt.LValue.ValueType;
+                var name = qt.LValue.ID;
+                if (vtype == "int")
+                {
+                    if (isLocal)
+                    {
+                        if (!LSymbols.ContainsKey(name))
+                        {
+                            var tplt_local = "   local {0}:{1}";
+                            LSymbols[name] = vtype;
+                            ProcSegment.Insert(0, string.Format(tplt_local, name, "dword"));
+                        }
+                        if (qt.RValueA != null)
+                        {
+                            if (qt.RValueA.ILNameType == ILNameType.Constant)
+                            {
+                                var tplt1 = "   mov {0},{1}";
+                                ProcSegment.Add(string.Format(tplt1, name, qt.RValueA.ID));
+                            }
+                            else
+                            {
+                                var tplt1 = "   mov eax,{0}";
+                                var tplt2 = "   mov {0},eax";
+                                if (qt.RValueA.ValueType == "addr")
+                                {
+                                    ProcSegment.Add(string.Format(tplt1, "dword ptr " + qt.RValueA.ID));
+                                }
+                                else
+                                {
+                                    ProcSegment.Add(string.Format(tplt1, qt.RValueA.ID));
+                                }
+                                ProcSegment.Add(string.Format(tplt2, name));
+                            }
+                        }
+                        else
+                        {
+                            ProcSegment.Add(string.Format("   mov {0},0", name));
+                        }
+                    }
+                    else
+                    {
+                        GSymbols[name] = vtype;
+                        if (qt.RValueA != null)
+                        {
+                            if (qt.RValueA.ILNameType == ILNameType.Constant)
+                            {
+                                var tplt1 = "   mov {0},{1}";
+                                ProcSegment.Add(string.Format(tplt1, name, qt.RValueA.ID));
+                            }
+                            else
+                            {
+                                var tplt1 = "   mov eax,{0}";
+                                var tplt2 = "   mov {0},eax";
+                                if (qt.RValueA.ValueType == "addr")
+                                {
+                                    ProcSegment.Add(string.Format(tplt1, "dword ptr " + qt.RValueA.ID));
+                                }
+                                else
+                                {
+                                    ProcSegment.Add(string.Format(tplt1, qt.RValueA.ID));
+                                }
+                                ProcSegment.Add(string.Format(tplt2, name));
+                            }
+                        }
+                        else
+                        {
+                            DataSegment.Add(string.Format(tplt, name, "dword", 0));
+                        }
+                    }
+                }
+                else if (vtype == "string")
+                {
+                    GSymbols[name] = "string";
+                    var tplt1 = "{0} byte {1},0";
+                    DataSegment.Add(string.Format(tplt1, name, qt.RValueA.ID));
+                }
             }
             private void ILAssign(QuadTuple qt)
             {
+                var tplt1 = "   mov eax,{0}";
+                var tplt2 = "   mov {0},eax";
 
             }
             private void ILDataBegin(QuadTuple qt)
@@ -103,7 +182,7 @@ namespace VinewoodCC
             }
             private void ILDataEnd(QuadTuple qt)
             {
-
+                DataSegment.Add(".code");
             }
             private void ILProcBegin(QuadTuple qt)
             {
@@ -150,9 +229,9 @@ namespace VinewoodCC
             }
             private void ILArrayAccess(QuadTuple qt)
             {
-                var tplt1 = "mov eax,{0}";
+                var tplt1 = "   mov eax,{0}";
                 ProcSegment.Add(string.Format(tplt1, qt.RValueB.ID));
-                var tplt2 = "mov {0},[{1}+{2}*eax]";
+                var tplt2 = "   mov {0},[{1}+{2}*eax]";
                 var arrName = qt.RValueA.ID;
                 var target = qt.LValue.ID;
                 if (!LSymbols.ContainsKey(target) && !GSymbols.ContainsKey(target))
@@ -160,7 +239,7 @@ namespace VinewoodCC
                     if (qt.LValue.ValueType == "int" || qt.LValue.ValueType == "addr")
                     {
                         LSymbols[target] = qt.LValue.ValueType;
-                        ProcSegment.Insert(0, string.Format("local {0}:dword", target));
+                        ProcSegment.Insert(0, string.Format("   local {0}:dword", target));
                     }
                 }
                 if (LSymbols.ContainsKey(arrName))
