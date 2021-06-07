@@ -10,6 +10,7 @@ namespace VinewoodCC
         class NativeCodeGenenrator
         {
             private bool isLocal { get; set; }
+            private List<string> PushQueue { get; set; } = null;
             private Dictionary<string, string> GSymbols { get; set; } = new Dictionary<string, string>();
             private Dictionary<string, string> LSymbols { get; set; } = new Dictionary<string, string>();
             private List<string> DataSegment { get; set; } = new List<string>();
@@ -26,21 +27,12 @@ namespace VinewoodCC
             private void ILArrayDefine(QuadTuple qt)
             {
                 var tplt = "{0} {1} {2} DUP({3})";
-                var tplt_local = "   local {0}[{1}]:{2}";
                 var vtype = qt.LValue.ValueType;
                 var len = int.Parse(qt.RValueA.ID);
                 if (vtype == "int")
                 {
-                    if (isLocal)
-                    {
-                        LSymbols[qt.LValue.ID] = qt.LValue.ValueType;
-                        ProcSegment.Add(string.Format(tplt_local, qt.LValue.ID, len, "dword"));
-                    }
-                    else
-                    {
-                        GSymbols[qt.LValue.ID] = qt.LValue.ValueType;
-                        DataSegment.Add(string.Format(tplt, qt.LValue.ID, "dword", len, 0));
-                    }
+                    GSymbols[qt.LValue.ID] = qt.LValue.ValueType;
+                    DataSegment.Insert(1, string.Format(tplt, qt.LValue.ID, "dword", len, 0));
                 }
             }
             private void ILArrayAssign(QuadTuple qt)
@@ -87,18 +79,22 @@ namespace VinewoodCC
             }
             private void ILPush(QuadTuple qt)
             {
-                var tplt = "   push {0}";
+                var tplt = ",{0}";
+                if (PushQueue is null)
+                {
+                    PushQueue = new List<string>();
+                }
                 if (qt.LValue.ValueType == "addr")
                 {
-                    ProcSegment.Add(string.Format(tplt, "dword ptr " + qt.LValue.ID));
+                    PushQueue.Add(string.Format(tplt, "dword ptr " + qt.LValue.ID));
                 }
                 else if (qt.LValue.ValueType == "string")
                 {
-                    ProcSegment.Add(string.Format(tplt, "offset " + qt.LValue.ID));
+                    PushQueue.Add(string.Format(tplt, "offset " + qt.LValue.ID));
                 }
                 else
                 {
-                    ProcSegment.Add(string.Format(tplt, qt.LValue.ID));
+                    PushQueue.Add(string.Format(tplt, qt.LValue.ID));
                 }
             }
             private void ILVarDefine(QuadTuple qt)
@@ -178,14 +174,44 @@ namespace VinewoodCC
                 {
                     GSymbols[name] = "string";
                     var tplt1 = "{0} byte {1},0";
-                    DataSegment.Add(string.Format(tplt1, name, qt.RValueA.ID));
+                    var str = qt.RValueA.ID;
+                    if (str.Length >= 4 && str[str.Length - 3] == '\\' && str[str.Length - 2] == 'n')
+                    {
+                        str = str.Remove(str.Length - 3, 2);
+                        if (str.Length <= 4)
+                        {
+                            DataSegment.Add(string.Format(tplt1, name, "0ah"));
+                        }
+                        else
+                        {
+                            DataSegment.Add(string.Format(tplt1, name, str + ",0ah"));
+                        }
+                    }
+                    else
+                    {
+                        DataSegment.Add(string.Format(tplt1, name, str));
+                    }
                 }
             }
             private void ILAssign(QuadTuple qt)
             {
                 var tplt1 = "   mov eax,{0}";
+                if (qt.RValueA.ValueType == "addr")
+                {
+                    ProcSegment.Add(string.Format(tplt1, "dword ptr " + qt.RValueA.ID));
+                }
+                else
+                {
+                    ProcSegment.Add(string.Format(tplt1, qt.RValueA.ID));
+                }
                 var tplt2 = "   mov {0},eax";
-                
+                var target = qt.LValue.ID;
+                if (!LSymbols.ContainsKey(target) && !GSymbols.ContainsKey(target))
+                {
+                    ProcSegment.Insert(0, string.Format("   local {0}:dword", target));
+                    LSymbols[target] = "int";
+                }
+                ProcSegment.Add(string.Format(tplt2, target));
             }
             private void ILDataBegin(QuadTuple qt)
             {
@@ -197,7 +223,7 @@ namespace VinewoodCC
             }
             private void ILProcBegin(QuadTuple qt)
             {
-                var tplt = "{0} proc stdcall";
+                var tplt = "{0} proc stdcall ";
                 CodeSegment.Add(string.Format(tplt, qt.LValue.ID));
             }
             private void ILProcEnd(QuadTuple qt)
@@ -207,7 +233,7 @@ namespace VinewoodCC
             }
             private void ILCall(QuadTuple qt)
             {
-                var tplt = "   call {0}";
+                var tplt = "   invoke {0}";
                 if (qt.RValueA.ID == "scanf" || qt.RValueA.ID == "printf")
                 {
                     ProcSegment.Add(string.Format(tplt, "crt_" + qt.RValueA.ID));
@@ -216,22 +242,44 @@ namespace VinewoodCC
                 {
                     ProcSegment.Add(string.Format(tplt, qt.RValueA.ID));
                 }
+                if (PushQueue is not null)
+                {
+                    foreach (var i in PushQueue)
+                    {
+                        ProcSegment[ProcSegment.Count - 1] += i;
+                    }
+                    PushQueue = null;
+                }
             }
             private void ILJmp(QuadTuple qt)
             {
-
+                ProcSegment.Add(string.Format("   jmp {0}", qt.LValue.ID));
             }
             private void ILJe(QuadTuple qt)
             {
-
+                var tplt1 = "   cmp {0},{1}";
+                ProcSegment.Add(string.Format(tplt1, qt.RValueA.ID, qt.RValueB.ID));
+                var tplt2 = "   je {0}";
+                ProcSegment.Add(string.Format(tplt2, qt.LValue.ID));
             }
             private void ILJne(QuadTuple qt)
             {
-
+                var tplt1 = "   cmp {0},{1}";
+                ProcSegment.Add(string.Format(tplt1, qt.RValueA.ID, qt.RValueB.ID));
+                var tplt2 = "   jne {0}";
+                ProcSegment.Add(string.Format(tplt2, qt.LValue.ID));
             }
             private void ILParam(QuadTuple qt)
             {
-
+                var last = CodeSegment[CodeSegment.Count - 1];
+                if (last[last.Length - 1] == ' ')
+                {
+                    CodeSegment[CodeSegment.Count - 1] += string.Format("{0}:dword", qt.LValue.ID);
+                }
+                else
+                {
+                    CodeSegment[CodeSegment.Count - 1] += string.Format(",{0}:dword", qt.LValue.ID);
+                }
             }
             private void ILReturn(QuadTuple qt)
             {
@@ -245,12 +293,36 @@ namespace VinewoodCC
             }
             private void ILJmpTarget(QuadTuple qt)
             {
-
+                ProcSegment.Add(string.Format("{0}:", qt.LValue.ID));
             }
-
-            private void ILAdd(QuadTuple qt)
+            private void ILSimpleBinary(QuadTuple qt, string op)
             {
-
+                var tplt1 = "   mov eax,{0}";
+                if (qt.RValueA.ValueType == "addr")
+                {
+                    ProcSegment.Add(string.Format(tplt1, "dword ptr " + qt.RValueA.ID));
+                }
+                else
+                {
+                    ProcSegment.Add(string.Format(tplt1, qt.RValueA.ID));
+                }
+                var tplt2 = "   {0} eax,{1}";
+                if (qt.RValueB.ValueType == "addr")
+                {
+                    ProcSegment.Add(string.Format(tplt2, op, "dword ptr " + qt.RValueB.ID));
+                }
+                else
+                {
+                    ProcSegment.Add(string.Format(tplt2, op, qt.RValueB.ID));
+                }
+                var tplt3 = "   mov {0},eax";
+                var target = qt.LValue.ID;
+                if (!LSymbols.ContainsKey(target) && !GSymbols.ContainsKey(target))
+                {
+                    ProcSegment.Insert(0, string.Format("   local {0}:dword", target));
+                    LSymbols[target] = "int";
+                }
+                ProcSegment.Add(string.Format(tplt3, target));
             }
             //calc &  store the addr of the element
             private void ILArrayAccess(QuadTuple qt)
@@ -263,66 +335,126 @@ namespace VinewoodCC
                 }
                 var arrName = qt.RValueA.ID;
                 ProcSegment.Add(string.Format("   lea ebx,{0}", arrName));
-                ProcSegment.Add("   add eax,ebx");
-                var tplt2 = "   mov {0},eax";
+                var tplt2 = "   mov {0},[eax][ebx]";
                 var target = qt.LValue.ID;
                 if (!LSymbols.ContainsKey(target) && !GSymbols.ContainsKey(target))
                 {
                     if (qt.LValue.ValueType == "int" || qt.LValue.ValueType == "addr")
                     {
-                        LSymbols[target] = qt.LValue.ValueType;
+                        LSymbols[target] = "int";
                         ProcSegment.Insert(0, string.Format("   local {0}:dword", target));
-                        ProcSegment.Add(string.Format(tplt2, target));
                     }
                 }
-                else
-                {
-                    ProcSegment.Add(string.Format(tplt2, target));
-                }
-            }
-            private void ILSubtract(QuadTuple qt)
-            {
-
+                ProcSegment.Add(string.Format(tplt2, target));
             }
             private void ILMultiply(QuadTuple qt)
             {
-
+                ProcSegment.Add("   xor edx,edx");
+                var tplt1 = "   mov eax,{0}";
+                if (qt.RValueA.ValueType == "addr")
+                {
+                    ProcSegment.Add(string.Format(tplt1, "dword ptr " + qt.RValueA.ID));
+                }
+                else
+                {
+                    ProcSegment.Add(string.Format(tplt1, qt.RValueA.ID));
+                }
+                var tplt2 = "   imul {1}";
+                if (qt.RValueB.ValueType == "addr")
+                {
+                    ProcSegment.Add(string.Format(tplt2, "dword ptr " + qt.RValueB.ID));
+                }
+                else
+                {
+                    ProcSegment.Add(string.Format(tplt2, qt.RValueB.ID));
+                }
+                var tplt3 = "   mov {0},eax";
+                var target = qt.LValue.ID;
+                if (!LSymbols.ContainsKey(target) && !GSymbols.ContainsKey(target))
+                {
+                    ProcSegment.Insert(0, string.Format("   local {0}:dword", target));
+                    LSymbols[target] = "int";
+                }
+                ProcSegment.Add(string.Format(tplt3, target));
             }
-            private void ILDivision(QuadTuple qt)
+            private void ILDivMod(QuadTuple qt, string op)
             {
-
+                ProcSegment.Add("   xor edx,edx");
+                var tplt1 = "   mov eax,{0}";
+                if (qt.RValueA.ValueType == "addr")
+                {
+                    ProcSegment.Add(string.Format(tplt1, "dword ptr " + qt.RValueA.ID));
+                }
+                else
+                {
+                    ProcSegment.Add(string.Format(tplt1, qt.RValueA.ID));
+                }
+                var tplt2 = "   mov ebx,{1}";
+                if (qt.RValueB.ValueType == "addr")
+                {
+                    ProcSegment.Add(string.Format(tplt2, "dword ptr " + qt.RValueB.ID));
+                }
+                else
+                {
+                    ProcSegment.Add(string.Format(tplt2, qt.RValueB.ID));
+                }
+                ProcSegment.Add("   idiv ebx");
+                var tplt3 = "   mov {0},{1}";
+                var target = qt.LValue.ID;
+                if (!LSymbols.ContainsKey(target) && !GSymbols.ContainsKey(target))
+                {
+                    ProcSegment.Insert(0, string.Format("   local {0}:dword", target));
+                    LSymbols[target] = "int";
+                }
+                ProcSegment.Add(string.Format(tplt3, target, op));
             }
-            private void ILGreater(QuadTuple qt)
+            private void ILJc(QuadTuple qt, string op)
             {
-
-            }
-            private void ILLess(QuadTuple qt)
-            {
-
-            }
-            private void ILEqual(QuadTuple qt)
-            {
-
+                var tplt1 = "   mov eax,{0}";
+                if (qt.RValueA.ValueType == "addr")
+                {
+                    ProcSegment.Add(string.Format(tplt1, "dword ptr " + qt.RValueA.ID));
+                }
+                else
+                {
+                    ProcSegment.Add(string.Format(tplt1, qt.RValueA.ID));
+                }
+                var tplt3 = "   mov ebx,{0}";
+                if (qt.RValueA.ValueType == "addr")
+                {
+                    ProcSegment.Add(string.Format(tplt3, "dword ptr " + qt.RValueB.ID));
+                }
+                else
+                {
+                    ProcSegment.Add(string.Format(tplt3, qt.RValueB.ID));
+                }
+                ProcSegment.Add("   cmp eax,ebx");
+                var tplt2 = "   {0} {1}";
+                ProcSegment.Add(string.Format(tplt2, op, qt.LValue.ID));
             }
             private void ILIncrease(QuadTuple qt)
             {
-
+                var tplt = "   inc {0}";
+                if (qt.LValue.ValueType == "addr")
+                {
+                    ProcSegment.Add(string.Format(tplt, "dword ptr " + qt.LValue.ID));
+                }
+                else
+                {
+                    ProcSegment.Add(string.Format(tplt, qt.LValue.ID));
+                }
             }
             private void ILDecrease(QuadTuple qt)
             {
-
-            }
-            private void ILGreaterEqual(QuadTuple qt)
-            {
-
-            }
-            private void ILLessEqual(QuadTuple qt)
-            {
-
-            }
-            private void ILNot(QuadTuple qt)
-            {
-
+                var tplt = "   dec {0}";
+                if (qt.LValue.ValueType == "addr")
+                {
+                    ProcSegment.Add(string.Format(tplt, "dword ptr " + qt.LValue.ID));
+                }
+                else
+                {
+                    ProcSegment.Add(string.Format(tplt, qt.LValue.ID));
+                }
             }
             private void ILLoadAddress(QuadTuple qt)
             {
@@ -348,8 +480,11 @@ namespace VinewoodCC
                 {
                     switch (item.Operator)
                     {
+                        case ILOperator.Module:
+                            ILDivMod(item, "edx");
+                            break;
                         case ILOperator.Add:
-                            ILAdd(item);
+                            ILSimpleBinary(item, "add");
                             break;
                         case ILOperator.ArrayAccess:
                             ILArrayAccess(item);
@@ -376,22 +511,22 @@ namespace VinewoodCC
                             ILDecrease(item);
                             break;
                         case ILOperator.Division:
-                            ILDivision(item);
+                            ILDivMod(item, "eax");
                             break;
-                        case ILOperator.Equal:
-                            ILEqual(item);
+                        case ILOperator.Je:
+                            ILJc(item, "je");
                             break;
-                        case ILOperator.Greater:
-                            ILGreater(item);
+                        case ILOperator.Jne:
+                            ILJc(item, "jne");
                             break;
-                        case ILOperator.GreaterEqual:
-                            ILGreaterEqual(item);
+                        case ILOperator.Jg:
+                            ILJc(item, "jg");
+                            break;
+                        case ILOperator.Jge:
+                            ILJc(item, "jge");
                             break;
                         case ILOperator.Increase:
                             ILIncrease(item);
-                            break;
-                        case ILOperator.Je:
-                            ILJe(item);
                             break;
                         case ILOperator.Jmp:
                             ILJmp(item);
@@ -399,14 +534,11 @@ namespace VinewoodCC
                         case ILOperator.JmpTarget:
                             ILJmpTarget(item);
                             break;
-                        case ILOperator.Jne:
-                            ILJne(item);
+                        case ILOperator.Jl:
+                            ILJc(item, "jl");
                             break;
-                        case ILOperator.Less:
-                            ILLess(item);
-                            break;
-                        case ILOperator.LessEqual:
-                            ILLessEqual(item);
+                        case ILOperator.Jle:
+                            ILJc(item, "jle");
                             break;
                         case ILOperator.LoadAddress:
                             ILLoadAddress(item);
@@ -414,8 +546,8 @@ namespace VinewoodCC
                         case ILOperator.Multiply:
                             ILMultiply(item);
                             break;
-                        case ILOperator.Not:
-                            ILNot(item);
+                        case ILOperator.Jnz:
+                            ILJc(item, "jnz");
                             break;
                         case ILOperator.Param:
                             ILParam(item);
@@ -438,7 +570,7 @@ namespace VinewoodCC
                             ILReturn(item);
                             break;
                         case ILOperator.Subtract:
-                            ILSubtract(item);
+                            ILSimpleBinary(item, "sub");
                             break;
                         case ILOperator.VarDefine:
                             ILVarDefine(item);

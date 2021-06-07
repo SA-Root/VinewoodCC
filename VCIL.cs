@@ -164,8 +164,7 @@ namespace VinewoodCC
             ProcEnd = 4,//xx endp
             Call = 5,
             Jmp = 6,
-            Je = 7,
-            Jne = 8,
+            Jne = 7,
             Param = 9,// xx:type
             Return = 10,//ret
             JmpTarget = 11,//jmp label in asm file
@@ -174,15 +173,16 @@ namespace VinewoodCC
             Subtract = 14,//-
             Multiply = 15,//*
             Division = 16,///
-            Greater = 17,//>
-            Less = 18,//<
-            Equal = 19,//==
+            Jg = 17,//>
+            Jl = 18,//<
+            Je = 19,//==
             Increase = 20,//++
             Decrease = 21,//--
-            GreaterEqual = 22,//>=
-            LessEqual = 23,//<=
-            Not = 24,//!
-            LoadAddress = 25//&
+            Jge = 22,//>=
+            Jle = 23,//<=
+            Jnz = 24,//!
+            LoadAddress = 25,//&
+            Module = 26//%
         }
         public class ILIdentifier
         {
