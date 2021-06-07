@@ -114,7 +114,7 @@ namespace VinewoodCC
             {
                 var root = new ASTCompilationUnit();
                 var items = S();
-                if (items != null)
+                if (items is not null)
                 {
                     root.Items = items;
                 }
@@ -130,7 +130,7 @@ namespace VinewoodCC
                 }
                 ret.Add(DEC_FUNC());
                 var SList = S();
-                if (SList != null)
+                if (SList is not null)
                 {
                     ret.AddRange(SList);
                 }
@@ -344,7 +344,7 @@ namespace VinewoodCC
                                 ret.Add(var2);
                             }
                             var var3s = VAR_DECL();
-                            if (var3s != null)
+                            if (var3s is not null)
                             {
                                 ret.AddRange(var3s);
                             }
@@ -370,7 +370,7 @@ namespace VinewoodCC
                     ST_VAR_DECL()
                 };
                     var var2s = VAR_DECL();
-                    if (var2s != null)
+                    if (var2s is not null)
                     {
                         ret.AddRange(var2s);
                     }
@@ -455,7 +455,7 @@ namespace VinewoodCC
                     }
                     var ret2 = ARRAY_MARK();
                     //multi-dimension array
-                    if (ret2 != null)
+                    if (ret2 is not null)
                     {
                         ret2.Declarator = ret;
                         return ret2;
@@ -502,7 +502,7 @@ namespace VinewoodCC
                     CONST_EXPR()
                 };
                     var ext = EXT_CONST();
-                    if (ext != null)
+                    if (ext is not null)
                     {
                         ret.AddRange(ext);
                     }
@@ -535,7 +535,7 @@ namespace VinewoodCC
                     CONST_EXPR()
                 };
                     var ext = EXT_CONST();
-                    if (ext != null)
+                    if (ext is not null)
                     {
                         ret.AddRange(ext);
                     }
@@ -653,7 +653,7 @@ namespace VinewoodCC
                     ARG_DECL()
                 };
                     var ext = EXT_ARGS();
-                    if (ext != null)
+                    if (ext is not null)
                     {
                         ret.AddRange(ext);
                     }
@@ -705,7 +705,7 @@ namespace VinewoodCC
                     ARG_DECL()
                 };
                     var ext = EXT_ARGS();
-                    if (ext != null)
+                    if (ext is not null)
                     {
                         ret.AddRange(ext);
                     }
@@ -761,7 +761,7 @@ namespace VinewoodCC
                 {
                     var ret = new List<ASTNode>();
                     var expr = EXPRESSION();
-                    if (expr != null)
+                    if (expr is not null)
                     {
                         ret.Add(expr);
                     }
@@ -1233,7 +1233,7 @@ namespace VinewoodCC
                             {
                                 fc.FunctionName = identifier;
                                 var r2 = PB_OPERATOR();
-                                if (r2 != null)
+                                if (r2 is not null)
                                 {
                                     (r2 as ASTBinaryExpression).Expr1 = fc;
                                     ret.Expr2 = r2;
@@ -1307,7 +1307,7 @@ namespace VinewoodCC
                             };
                             ++TokenIndex;
                             var ext = EXT_Identifier();
-                            if (ext != null)
+                            if (ext is not null)
                             {
                                 (ext as ASTArrayAccess).ArrayName = identifier;
                                 if ((ext as ASTArrayAccess).ArrayName is ASTArrayAccess aaa)
@@ -1322,7 +1322,14 @@ namespace VinewoodCC
                             if (MatchToken("')") || MatchToken("';'"))
                             {
                                 ret.Operator = op;
-                                ret.Expr2 = ext;
+                                if (ext is not null)
+                                {
+                                    ret.Expr2 = ext;
+                                }
+                                else
+                                {
+                                    ret.Expr2 = identifier;
+                                }
                             }
                             else
                             {
@@ -1611,7 +1618,7 @@ namespace VinewoodCC
                         {
                             ++TokenIndex;
                             var tmp = NORM_EXPR();
-                            if (tmp != null)
+                            if (tmp is not null)
                             {
                                 ret.Step = new List<ASTNode>
                             {
@@ -1675,7 +1682,7 @@ namespace VinewoodCC
                             {
                                 ++TokenIndex;
                                 var tmp = NORM_EXPR();
-                                if (tmp != null)
+                                if (tmp is not null)
                                 {
                                     ret.Step = new List<ASTNode>
                                 {

@@ -330,7 +330,6 @@ namespace VinewoodCC
                         new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "addr")));
                     ++ILGenerator.TmpCounter;
                 }
-                ILProgram.MergePostfix();
             }
         }
         public partial class ASTBinaryExpression : ASTExpression
@@ -409,6 +408,7 @@ namespace VinewoodCC
                         Expr1.ILGenerate(ILProgram, null);
                         ILProgram.Last().Operator = ILOperator.LoadAddress;
                         ILProgram.Last().LValue.ValueType = "addr";
+                        ILProgram.MergePostfix();
                         expr.Operator = ILOperator.Assign;
                         expr.LValue = ILProgram.Last().LValue;
                     }
@@ -674,6 +674,7 @@ namespace VinewoodCC
                     {
                         aa.ILGenerate(ILProgram, null);
                         ILProgram.Last().Operator = ILOperator.LoadAddress;
+                        ILProgram.MergePostfix();
                     }
                     else if (Expression is ASTIdentifier id)
                     {
@@ -681,6 +682,7 @@ namespace VinewoodCC
                         ILProgram.Add(new QuadTuple(ILOperator.LoadAddress, original, null,
                             new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "addr")));
                         ++ILGenerator.TmpCounter;
+                        ILProgram.MergePostfix();
                     }
                 }
             }
@@ -964,7 +966,7 @@ namespace VinewoodCC
                     if (Condition[0] is ASTBinaryExpression be)
                     {
                         be.ILGenerate(ILProgram, null);
-                        ILProgram.Last().LValue = jmpEnd.LValue;
+                        ILProgram.Last().LValue = jmpOther.LValue;
                         // if (be.Expr1 is ASTIdentifier id)
                         // {
                         //     var e1 = new ILIdentifier(id.Value, ILNameType.Var, null);
@@ -1061,6 +1063,7 @@ namespace VinewoodCC
                 foreach (var i in BlockItems)
                 {
                     i.ILGenerate(ILProgram, null);
+                    ILProgram.MergePostfix();
                 }
             }
         }

@@ -145,7 +145,7 @@ namespace VinewoodCC
                     if (str.Length >= 4 && str[str.Length - 3] == '\\' && str[str.Length - 2] == 'n')
                     {
                         str = str.Remove(str.Length - 3, 2);
-                        if (str.Length <= 4)
+                        if (str.Length <= 2)
                         {
                             DataSegment.Add(string.Format(tplt1, name, "0ah"));
                         }
@@ -225,6 +225,17 @@ namespace VinewoodCC
                         ProcSegment[ProcSegment.Count - 1] += i;
                     }
                     PushQueue = null;
+                }
+                if (qt.LValue is not null)
+                {
+                    var ret = qt.LValue.ID;
+                    if (!LSymbols.ContainsKey(ret) && !GSymbols.ContainsKey(ret))
+                    {
+                        ProcSegment.Insert(0, string.Format("   local {0}:dword", ret));
+                        LSymbols[ret] = "int";
+                    }
+                    var tplt4 = "   mov {0},eax";
+                    ProcSegment.Add(string.Format(tplt4, ret));
                 }
             }
             private void ILJmp(QuadTuple qt)
@@ -366,7 +377,7 @@ namespace VinewoodCC
                 {
                     ProcSegment.Add(string.Format(tplt1, qt.RValueA.ID));
                 }
-                var tplt2 = "   mov ebx,{1}";
+                var tplt2 = "   mov ebx,{0}";
                 if (qt.RValueB.ValueType == "addr")
                 {
                     ProcSegment.Add(string.Format(tplt2, "dword ptr " + qt.RValueB.ID));
@@ -397,7 +408,7 @@ namespace VinewoodCC
                     ProcSegment.Add(string.Format(tplt1, qt.RValueA.ID));
                 }
                 var tplt3 = "   mov ebx,{0}";
-                if (qt.RValueA.ValueType == "addr")
+                if (qt.RValueB.ValueType == "addr")
                 {
                     ProcSegment.Add(string.Format(tplt3, "dword ptr " + qt.RValueB.ID));
                 }
