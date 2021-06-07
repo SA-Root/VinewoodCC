@@ -88,7 +88,18 @@ namespace VinewoodCC
             private void ILPush(QuadTuple qt)
             {
                 var tplt = "   push {0}";
-                ProcSegment.Add(string.Format(tplt, qt.LValue.ID));
+                if (qt.LValue.ValueType == "addr")
+                {
+                    ProcSegment.Add(string.Format(tplt, "dword ptr " + qt.LValue.ID));
+                }
+                else if (qt.LValue.ValueType == "string")
+                {
+                    ProcSegment.Add(string.Format(tplt, "offset " + qt.LValue.ID));
+                }
+                else
+                {
+                    ProcSegment.Add(string.Format(tplt, qt.LValue.ID));
+                }
             }
             private void ILVarDefine(QuadTuple qt)
             {
@@ -105,7 +116,7 @@ namespace VinewoodCC
                             LSymbols[name] = vtype;
                             ProcSegment.Insert(0, string.Format(tplt_local, name, "dword"));
                         }
-                        if (qt.RValueA != null)
+                        if (qt.RValueA is not null)
                         {
                             if (qt.RValueA.ILNameType == ILNameType.Constant)
                             {
@@ -135,7 +146,7 @@ namespace VinewoodCC
                     else
                     {
                         GSymbols[name] = vtype;
-                        if (qt.RValueA != null)
+                        if (qt.RValueA is not null)
                         {
                             if (qt.RValueA.ILNameType == ILNameType.Constant)
                             {
@@ -174,7 +185,7 @@ namespace VinewoodCC
             {
                 var tplt1 = "   mov eax,{0}";
                 var tplt2 = "   mov {0},eax";
-
+                
             }
             private void ILDataBegin(QuadTuple qt)
             {
@@ -196,7 +207,15 @@ namespace VinewoodCC
             }
             private void ILCall(QuadTuple qt)
             {
-
+                var tplt = "   call {0}";
+                if (qt.RValueA.ID == "scanf" || qt.RValueA.ID == "printf")
+                {
+                    ProcSegment.Add(string.Format(tplt, "crt_" + qt.RValueA.ID));
+                }
+                else
+                {
+                    ProcSegment.Add(string.Format(tplt, qt.RValueA.ID));
+                }
             }
             private void ILJmp(QuadTuple qt)
             {
@@ -216,7 +235,13 @@ namespace VinewoodCC
             }
             private void ILReturn(QuadTuple qt)
             {
-
+                if (qt.LValue is not null)
+                {
+                    var tplt1 = "   mov eax,{0}";
+                    ProcSegment.Add(string.Format(tplt1, qt.LValue.ID));
+                }
+                var tplt2 = "   ret";
+                ProcSegment.Add(tplt2);
             }
             private void ILJmpTarget(QuadTuple qt)
             {
@@ -227,12 +252,19 @@ namespace VinewoodCC
             {
 
             }
+            //calc &  store the addr of the element
             private void ILArrayAccess(QuadTuple qt)
             {
                 var tplt1 = "   mov eax,{0}";
                 ProcSegment.Add(string.Format(tplt1, qt.RValueB.ID));
-                var tplt2 = "   mov {0},[{1}+{2}*eax]";
+                if (qt.LValue.ValueType == "int" || qt.LValue.ValueType == "addr")
+                {
+                    ProcSegment.Add(string.Format("   imul eax,eax,{0}", 4));
+                }
                 var arrName = qt.RValueA.ID;
+                ProcSegment.Add(string.Format("   lea ebx,{0}", arrName));
+                ProcSegment.Add("   add eax,ebx");
+                var tplt2 = "   mov {0},eax";
                 var target = qt.LValue.ID;
                 if (!LSymbols.ContainsKey(target) && !GSymbols.ContainsKey(target))
                 {
@@ -240,21 +272,12 @@ namespace VinewoodCC
                     {
                         LSymbols[target] = qt.LValue.ValueType;
                         ProcSegment.Insert(0, string.Format("   local {0}:dword", target));
-                    }
-                }
-                if (LSymbols.ContainsKey(arrName))
-                {
-                    if (LSymbols[arrName] == "int" || LSymbols[arrName] == "addr")
-                    {
-                        ProcSegment.Add(string.Format(tplt2, target, arrName, 4));
+                        ProcSegment.Add(string.Format(tplt2, target));
                     }
                 }
                 else
                 {
-                    if (GSymbols[arrName] == "int" || LSymbols[arrName] == "addr")
-                    {
-                        ProcSegment.Add(string.Format(tplt2, target, arrName, 4));
-                    }
+                    ProcSegment.Add(string.Format(tplt2, target));
                 }
             }
             private void ILSubtract(QuadTuple qt)
@@ -303,11 +326,16 @@ namespace VinewoodCC
             }
             private void ILLoadAddress(QuadTuple qt)
             {
-
-            }
-            private void ILPushAddr(QuadTuple qt)
-            {
-
+                var tplt1 = "   lea eax,{0}";
+                ProcSegment.Add(string.Format(tplt1, qt.RValueA.ID));
+                var tplt2 = "   mov {0},eax";
+                var target = qt.LValue.ID;
+                if (!LSymbols.ContainsKey(target) && !GSymbols.ContainsKey(target))
+                {
+                    LSymbols[target] = "addr";
+                    ProcSegment.Insert(0, string.Format("   local {0}:dword", target));
+                }
+                ProcSegment.Add(string.Format(tplt2, target));
             }
             public void Run(string path)
             {
@@ -405,9 +433,6 @@ namespace VinewoodCC
                             break;
                         case ILOperator.Push:
                             ILPush(item);
-                            break;
-                        case ILOperator.PushAddr:
-                            ILPushAddr(item);
                             break;
                         case ILOperator.Return:
                             ILReturn(item);

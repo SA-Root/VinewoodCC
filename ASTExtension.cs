@@ -237,7 +237,7 @@ namespace VinewoodCC
             {
                 var id = (ArrayName as ASTIdentifier).Value;
                 //local array
-                if (LST != null && LST.ContainsKey(id))
+                if (LST is not null && LST.ContainsKey(id))
                 {
                     VType = (LST[id] as STArrayItem).ValueType;
                 }
@@ -542,16 +542,8 @@ namespace VinewoodCC
                     else
                     {
                         i.ILGenerate(ILProgram, null);
-                        if (ILProgram.Last().Operator == ILOperator.LoadAddress)
-                        {
-                            ILProgram.Add(new QuadTuple(ILOperator.PushAddr, null, null,
+                        ILProgram.Add(new QuadTuple(ILOperator.Push, null, null,
                                 ILProgram.Last().LValue));
-                        }
-                        else
-                        {
-                            ILProgram.Add(new QuadTuple(ILOperator.Push, null, null,
-                                ILProgram.Last().LValue));
-                        }
                     }
                 }
                 var fname = (FunctionName as ASTIdentifier).Value;
@@ -675,12 +667,13 @@ namespace VinewoodCC
                     if (Expression is ASTArrayAccess aa)
                     {
                         aa.ILGenerate(ILProgram, null);
-                        ILProgram.Last().Operator = ILOperator.LoadAddress;
                     }
                     else if (Expression is ASTIdentifier id)
                     {
                         var original = new ILIdentifier(id.Value, ILNameType.Var, null);
-                        ILProgram.Add(new QuadTuple(ILOperator.LoadAddress, null, null, original));
+                        ILProgram.Add(new QuadTuple(ILOperator.LoadAddress, original, null,
+                            new ILIdentifier("@Tmp" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, "addr")));
+                        ++ILGenerator.TmpCounter;
                     }
                 }
             }

@@ -83,17 +83,21 @@ namespace VinewoodCC
             }
             public static QuadTuple Last(this List<QuadTuple> ILProgram)
             => ILProgram[ILProgram.Count - 1];
+            public static void PrintToConsole(this QuadTuple i)
+            {
+                Console.Write("({0},", i.Operator);
+                if (i.RValueA is not null) Console.Write(i.RValueA.ID);
+                Console.Write(",");
+                if (i.RValueB is not null) Console.Write(i.RValueB.ID);
+                Console.Write(",");
+                if (i.LValue is not null) Console.Write(i.LValue.ID);
+                Console.Write(")\n");
+            }
             public static void PrintToConsole(this List<QuadTuple> ILProgram)
             {
                 foreach (var i in ILProgram)
                 {
-                    Console.Write("({0},", i.Operator);
-                    if (i.RValueA is not null) Console.Write(i.RValueA.ID);
-                    Console.Write(",");
-                    if (i.RValueB is not null) Console.Write(i.RValueB.ID);
-                    Console.Write(",");
-                    if (i.LValue is not null) Console.Write(i.LValue.ID);
-                    Console.Write(")\n");
+                    i.PrintToConsole();
                 }
             }
             public static void OutputQuadTuple(this List<QuadTuple> ILProgram, string path)
@@ -178,8 +182,7 @@ namespace VinewoodCC
             GreaterEqual = 22,//>=
             LessEqual = 23,//<=
             Not = 24,//!
-            LoadAddress = 25,//&
-            PushAddr = 26
+            LoadAddress = 25//&
         }
         public class ILIdentifier
         {
