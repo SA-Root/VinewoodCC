@@ -15,24 +15,32 @@ namespace VinewoodCC
                 ILGenerator.PostfixCache.Clear();
             }
         }
-        public static void InjectConstant(this QuadTuple qt, ASTConstant constant, bool isRValue)
+        public static void InjectConstant(this QuadTuple qt, ASTConstant constant, int isRValue, ILIdentifier str = null)
         {
             if (constant is ASTStringConstant sc)
             {
-                if (isRValue)
+                if (isRValue == 0)
                 {
-                    qt.RValueA = new ILIdentifier(sc.Value, ILNameType.Constant, "string");
+                    qt.RValueA = str;
+                }
+                else if (isRValue == 1)
+                {
+                    qt.RValueB = str;
                 }
                 else
                 {
-                    qt.LValue = new ILIdentifier(sc.Value, ILNameType.Constant, "string");
+                    qt.LValue = str;
                 }
             }
             else if (constant is ASTIntegerConstant ic)
             {
-                if (isRValue)
+                if (isRValue == 0)
                 {
                     qt.RValueA = new ILIdentifier(ic.Value.ToString(), ILNameType.Constant, "int");
+                }
+                else if (isRValue == 1)
+                {
+                    qt.RValueB = new ILIdentifier(ic.Value.ToString(), ILNameType.Constant, "int");
                 }
                 else
                 {
@@ -41,9 +49,13 @@ namespace VinewoodCC
             }
             else if (constant is ASTFloatConstant fp)
             {
-                if (isRValue)
+                if (isRValue == 0)
                 {
                     qt.RValueA = new ILIdentifier(fp.Value.ToString(), ILNameType.Constant, "float");
+                }
+                else if (isRValue == 1)
+                {
+                    qt.RValueB = new ILIdentifier(fp.Value.ToString(), ILNameType.Constant, "float");
                 }
                 else
                 {
@@ -52,9 +64,13 @@ namespace VinewoodCC
             }
             else if (constant is ASTCharConstant cc)
             {
-                if (isRValue)
+                if (isRValue == 0)
                 {
                     qt.RValueA = new ILIdentifier(cc.Value.ToString(), ILNameType.Constant, "char");
+                }
+                else if (isRValue == 1)
+                {
+                    qt.RValueB = new ILIdentifier(cc.Value.ToString(), ILNameType.Constant, "char");
                 }
                 else
                 {
@@ -158,7 +174,9 @@ namespace VinewoodCC
         Decrease = 21,//--
         GreaterEqual = 22,//>=
         LessEqual = 23,//<=
-        Not = 24//!
+        Not = 24,//!
+        LoadAddress = 25,//&
+        PushAddr = 26
     }
     public class ILIdentifier
     {

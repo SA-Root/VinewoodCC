@@ -1058,7 +1058,7 @@ namespace ParserSharp
             else
             {
                 //prefix expr
-                if (MatchToken("'++'") || MatchToken("'--'") || MatchToken("'!'"))
+                if (MatchToken("'++'") || MatchToken("'--'") || MatchToken("'!'") || MatchToken("'&'"))
                 {
                     var ret = new ASTExpressionStatement
                     {
@@ -1470,7 +1470,7 @@ namespace ParserSharp
         //PS_OPERATOR -> ++ | -- | !
         private ASTToken PS_OPERATOR()
         {
-            if (MatchToken("'++'") || MatchToken("'--'") || MatchToken("'!'"))
+            if (MatchToken("'++'") || MatchToken("'--'") || MatchToken("'!'") || MatchToken("'&'"))
             {
                 var ret = new ASTToken
                 {
