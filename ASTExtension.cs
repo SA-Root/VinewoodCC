@@ -814,34 +814,13 @@ namespace VinewoodCC
                 {
                     if (Condition[0] is ASTBinaryExpression be)
                     {
-                        // if (be.Operator.Value == "&&")
-                        // {
-                        //     be.Expr1.ILGenerate(ILProgram, null);
-                        //     ILProgram.Add(new QuadTuple(ILOperator.Jnz,
-                        //         ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
-                        //     be.Expr2.ILGenerate(ILProgram, null);
-                        // }
-                        // else if (be.Operator.Value == "||")
-                        // {
-                        //     be.Expr1.ILGenerate(ILProgram, null);
-                        //     ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        //         ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
-                        //     be.Expr2.ILGenerate(ILProgram, null);
-                        // }
-                        // else
-                        // {
                         be.ILGenerate(ILProgram, null);
                         ILProgram.Last().LValue = jmpEnd.LValue;
-                        // ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        //     ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
-                        // }
                     }
                     else
                     {
                         Condition[0].ILGenerate(ILProgram, null);
                         ILProgram.Last().LValue = jmpEnd.LValue;
-                        // ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        //     ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
                     }
                 }
                 var body = (Stat as ASTCompoundStatement).BlockItems;
@@ -905,34 +884,13 @@ namespace VinewoodCC
                 {
                     if (Condition[0] is ASTBinaryExpression be)
                     {
-                        // if (be.Operator.Value == "&&")
-                        // {
-                        //     be.Expr1.ILGenerate(ILProgram, null);
-                        //     ILProgram.Add(new QuadTuple(ILOperator.Jne,
-                        //         ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
-                        //     be.Expr2.ILGenerate(ILProgram, null);
-                        // }
-                        // else if (be.Operator.Value == "||")
-                        // {
-                        //     be.Expr1.ILGenerate(ILProgram, null);
-                        //     ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        //         ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
-                        //     be.Expr2.ILGenerate(ILProgram, null);
-                        // }
-                        // else
-                        // {
                         be.ILGenerate(ILProgram, null);
                         ILProgram.Last().LValue = jmpEnd.LValue;
-                        // ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        //     ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
-                        // }
                     }
                     else
                     {
                         Condition[0].ILGenerate(ILProgram, null);
                         ILProgram.Last().LValue = jmpEnd.LValue;
-                        // ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        //     ILProgram.Last().LValue, new ILIdentifier("0", ILNameType.Constant, "int"), jmpEnd.LValue));
                     }
                 }
                 var body = (Stat as ASTCompoundStatement).BlockItems;
@@ -967,63 +925,6 @@ namespace VinewoodCC
                     {
                         be.ILGenerate(ILProgram, null);
                         ILProgram.Last().LValue = jmpOther.LValue;
-                        // if (be.Expr1 is ASTIdentifier id)
-                        // {
-                        //     var e1 = new ILIdentifier(id.Value, ILNameType.Var, null);
-                        //     // if (be.Operator.Value == "&&")
-                        //     // {
-                        //     //     ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        //     //         new ILIdentifier("0", ILNameType.Constant, "int"), e1, jmpOther.LValue));
-                        //     // }
-                        //     // else
-                        //     // {
-                        //         ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        //             new ILIdentifier("1", ILNameType.Constant, "int"), e1, jmpOther.LValue));
-                        //     // }
-                        // }
-                        // else
-                        // {
-                        //     be.Expr1.ILGenerate(ILProgram, null);
-                        //     // if (be.Operator.Value == "&&")
-                        //     // {
-                        //     //     ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        //     //         new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpOther.LValue));
-                        //     // }
-                        //     // else
-                        //     // {
-                        //         ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        //             new ILIdentifier("1", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpOther.LValue));
-                        //     // }
-                        // }
-                        // if (be.Expr2 is ASTIdentifier id2)
-                        // {
-                        //     var e2 = new ILIdentifier(id2.Value, ILNameType.Var, null);
-                        //     // if (be.Operator.Value == "&&")
-                        //     // {
-                        //     //     ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        //     //         new ILIdentifier("0", ILNameType.Constant, "int"), e2, jmpOther.LValue));
-                        //     // }
-                        //     // else
-                        //     // {
-                        //         ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        //             new ILIdentifier("1", ILNameType.Constant, "int"), e2, jmpOther.LValue));
-                        //     // }
-                        // }
-                        // else
-                        // {
-                        //     be.Expr2.ILGenerate(ILProgram, null);
-                        //     // if (be.Operator.Value == "&&")
-                        //     // {
-                        //     //     ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        //     //         new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
-                        //     // }
-                        //     // else
-                        //     // {
-                        //         ILProgram.Add(new QuadTuple(ILOperator.Je,
-                        //             new ILIdentifier("0", ILNameType.Constant, "int"), ILProgram.Last().LValue, jmpEnd.LValue));
-                        //         ILProgram.Add(jmpOther);
-                        //     // }
-                        // }
                     }
                     else
                     {

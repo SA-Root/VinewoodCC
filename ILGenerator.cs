@@ -44,8 +44,6 @@ namespace VinewoodCC
                 LoopContinueStack = new Stack<QuadTuple>();
                 TmpCounter = 0;
                 Root.ILGenerate(ILProgram, null);
-                //Console.WriteLine("---------------IR Code---------------");
-                //ILProgram.PrintToConsole();
                 ILProgram.OutputQuadTuple(OutputFile);
             }
             public void Run(string arg)

@@ -36,7 +36,6 @@ namespace VinewoodCC
                 return;
             }
             run(args[0]);
-            //_ = BenchmarkRunner.Run<Test>();
         }
     }
 }
