@@ -3,10 +3,8 @@ using System.IO;
 using System.Collections.Generic;
 using VinewoodCC.ILGen;
 
-namespace VinewoodCC
+namespace VinewoodCC.NGen
 {
-    namespace NGen
-    {
         class NativeCodeGenenrator
         {
             private bool isLocal { get; set; }
@@ -600,5 +598,5 @@ namespace VinewoodCC
                 }
             }
         }
-    }
+
 }
