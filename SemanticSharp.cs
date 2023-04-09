@@ -16,11 +16,9 @@ namespace VinewoodCC
                 try
                 {
                     var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
-                    using (var reader = new StreamReader(stream))
-                    {
-                        var jsonAST = reader.ReadToEnd();
-                        Root = JsonConvert.DeserializeObject<ASTNode>(jsonAST);
-                    }
+                    using var reader = new StreamReader(stream);
+                    var jsonAST = reader.ReadToEnd();
+                    Root = JsonConvert.DeserializeObject<ASTNode>(jsonAST);
                 }
                 catch (Exception e)
                 {

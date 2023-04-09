@@ -28,33 +28,31 @@ namespace VinewoodCC
                 try
                 {
                     var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
-                    using (var reader = new StreamReader(stream))
+                    using var reader = new StreamReader(stream);
+                    //[@26,77:78='<=',<'<='>,5:14]
+                    while (!reader.EndOfStream)
                     {
-                        //[@26,77:78='<=',<'<='>,5:14]
-                        while (!reader.EndOfStream)
+                        var line = reader.ReadLine();
+                        var ValueLeftQuote = line.IndexOf('\'');
+                        var ValueRightQuote = line.LastIndexOf("',<");
+                        var TypeLeftBracket = ValueRightQuote + 2;//x
+                        var TypeRightBracket = line.LastIndexOf('>');
+                        if (TypeLeftBracket + 2 == TypeRightBracket)
                         {
-                            var line = reader.ReadLine();
-                            var ValueLeftQuote = line.IndexOf('\'');
-                            var ValueRightQuote = line.LastIndexOf("',<");
-                            var TypeLeftBracket = ValueRightQuote + 2;//x
-                            var TypeRightBracket = line.LastIndexOf('>');
-                            if (TypeLeftBracket + 2 == TypeRightBracket)
-                            {
-                                TypeLeftBracket -= 2;
-                            }
-                            var LineLeft = TypeRightBracket + 2;
-                            var LineRight = line.LastIndexOf(':') - 1;
-                            var ColumnLeft = LineRight + 2;
-                            var ColumnRight = line.Length - 2;
-                            var token = new ScannerTokens
-                            {
-                                Value = line.Substring(ValueLeftQuote + 1, ValueRightQuote - ValueLeftQuote - 1),
-                                Type = line.Substring(TypeLeftBracket + 1, TypeRightBracket - TypeLeftBracket - 1),
-                                Line = int.Parse(line.Substring(LineLeft, LineRight - LineLeft + 1)),
-                                Column = int.Parse(line.Substring(ColumnLeft, ColumnRight - ColumnLeft + 1))
-                            };
-                            Tokens.Add(token);
+                            TypeLeftBracket -= 2;
                         }
+                        var LineLeft = TypeRightBracket + 2;
+                        var LineRight = line.LastIndexOf(':') - 1;
+                        var ColumnLeft = LineRight + 2;
+                        var ColumnRight = line.Length - 2;
+                        var token = new ScannerTokens
+                        {
+                            Value = line.Substring(ValueLeftQuote + 1, ValueRightQuote - ValueLeftQuote - 1),
+                            Type = line.Substring(TypeLeftBracket + 1, TypeRightBracket - TypeLeftBracket - 1),
+                            Line = int.Parse(line.Substring(LineLeft, LineRight - LineLeft + 1)),
+                            Column = int.Parse(line.Substring(ColumnLeft, ColumnRight - ColumnLeft + 1))
+                        };
+                        Tokens.Add(token);
                     }
                 }
                 catch (Exception e)
@@ -69,16 +67,14 @@ namespace VinewoodCC
             {
                 Root = Program();
                 // Console.WriteLine("Generating JSON file...");
-                OutputFile = path.Substring(0, path.LastIndexOf(".tokens")) + ".ast.json";
+                OutputFile = string.Concat(path.AsSpan(0, path.LastIndexOf(".tokens")), ".ast.json");
                 var jsonString = JsonConvert.SerializeObject(Root, Formatting.Indented);
                 // Console.WriteLine($"Writing to \"{OutputFile}\"...");
                 try
                 {
                     var stream = new FileStream(OutputFile, FileMode.Create, FileAccess.Write);
-                    using (var writer = new StreamWriter(stream))
-                    {
-                        writer.Write(jsonString);
-                    }
+                    using var writer = new StreamWriter(stream);
+                    writer.Write(jsonString);
                 }
                 catch (Exception e)
                 {
@@ -983,7 +979,7 @@ namespace VinewoodCC
                     {
                         if (aa.ArrayName is ASTArrayAccess aaa)
                         {
-                            (aa.ArrayName as ASTArrayAccess).ArrayName = identifier;
+                            aaa.ArrayName = identifier;
                         }
                         else
                         {
@@ -1084,7 +1080,7 @@ namespace VinewoodCC
                             {
                                 if (aa.ArrayName is ASTArrayAccess aaa)
                                 {
-                                    (aa.ArrayName as ASTArrayAccess).ArrayName = identifier;
+                                    aaa.ArrayName = identifier;
                                 }
                                 else
                                 {
@@ -1174,7 +1170,7 @@ namespace VinewoodCC
                         {
                             if (aa.ArrayName is ASTArrayAccess aaa)
                             {
-                                (aa.ArrayName as ASTArrayAccess).ArrayName = identifier;
+                                aaa.ArrayName = identifier;
                             }
                             else
                             {

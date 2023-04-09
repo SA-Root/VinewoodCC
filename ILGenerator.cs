@@ -19,15 +19,13 @@ namespace VinewoodCC
             public List<QuadTuple> ILProgram { get; set; }
             private int LoadAST(string path)
             {
-                OutputFile = path.Substring(0, path.LastIndexOf(".ast.json")) + ".vcil";
+                OutputFile = string.Concat(path.AsSpan(0, path.LastIndexOf(".ast.json")), ".vcil");
                 try
                 {
                     var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
-                    using (var reader = new StreamReader(stream))
-                    {
-                        var jsonAST = reader.ReadToEnd();
-                        Root = JsonConvert.DeserializeObject<ASTNode>(jsonAST);
-                    }
+                    using var reader = new StreamReader(stream);
+                    var jsonAST = reader.ReadToEnd();
+                    Root = JsonConvert.DeserializeObject<ASTNode>(jsonAST);
                 }
                 catch (Exception e)
                 {
@@ -58,7 +56,7 @@ namespace VinewoodCC
             }
             public void Run2(string arg)
             {
-                OutputFile = arg.Substring(0, arg.LastIndexOf(".ast.json")) + ".vcil";
+                OutputFile = string.Concat(arg.AsSpan(0, arg.LastIndexOf(".ast.json")), ".vcil");
                 Console.WriteLine("Generating IR...");
                 GenerateIR();
             }

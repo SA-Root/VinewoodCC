@@ -22,16 +22,16 @@ namespace VinewoodCC
                 workerid = wid;
             }
         }
-        public class Lexer
+        public partial class Lexer
         {
             public string OutputFile { get; set; }
-            private readonly Regex RxFloat = new Regex(@"\A(0[xX][\dA-Fa-f]+(\.[\dA-Fa-f]+)?[pP][\+\-]?\d+[flFL]?|\d*(\.\d*([eE][\+\-]?\d+)?|[eE][\+\-]?\d+)[flFL]?)", RegexOptions.Compiled);
-            private readonly Regex RxInteger = new Regex(@"\A((((0x|0X)[\dA-Fa-f]+)|\d+|(0[0-7]+))(llu|ull|LLU|ULL|LU|lu|ul|UL|ll|LL|[ulUL])?)", RegexOptions.Compiled);
-            private readonly Regex RxChar = new Regex(@"\A([uUL]?'(\\U[\dA-Fa-f]{8}|\\u[\dA-Fa-f]{4}|\\x[\dA-Fa-f]{1,2}|\\0?[0-7]{1,2}|\\""|\\'|\\\?|\\\\|\\a|\\b|\\f|\\n|\\r|\\t|\\v\\\n|[^'\\])')", RegexOptions.Compiled);
-            private readonly Regex RxIdentifier = new Regex(@"\A([_a-zA-Z](_|\w)*)", RegexOptions.Compiled);
-            private readonly Regex RxKeywords = new Regex(@"\A(auto|break|case|char|const|continue|default|double|do|else|enum|extern|float|for|goto|if|inline|int|long|register|restrict|return|short|signed|sizeof||struct|switch|typedef|union|unsigned|void|volatile|while)", RegexOptions.Compiled);
-            private readonly Regex RxOperators = new Regex(@"\A(%:%:|%:|\#\#|<:|:>|<%|%>|(<<|>>|&|\*|/|%|\+|-|!|=|\||\^|>|<)=|&&|\|\||\.\.\.|--|<<|>>|\+\+|->|[&/~!%<>:;=,\-\*\+\[\]\(\)\{\}\.\^\|\?\#])", RegexOptions.Compiled);
-            private readonly Regex RxString = new Regex(@"\A((u8|u|U|L)?""(\\U[\dA-Fa-f]{8}|\\u[\dA-Fa-f]{4}|\\x[\dA-Fa-f]{1,2}|\\0?[0-7]{1,2}|\\""|\\'|\\\?|\\\\|\\a|\\b|\\f|\\n|\\r|\\t|\\v|[^\\""])*"")", RegexOptions.Compiled);
+            private readonly Regex RxFloat = _RxFloat();
+            private readonly Regex RxInteger = _RxInteger();
+            private readonly Regex RxChar = _RxChar();
+            private readonly Regex RxIdentifier = _RxIdentifier();
+            private readonly Regex RxKeywords = _RxKeywords();
+            private readonly Regex RxOperators = _RxOperators();
+            private readonly Regex RxString = _RxString();
             private readonly string TokenTemplate = "[@{0},{1}:{2}='{3}',<{4}>,{5}:{6}]";
             private readonly string TokenTemplateP = "{0}:{1}='{2}',<{3}>,{4}:{5}]";
             private readonly string TokenTemplatePPrefix = "[@{0},";
@@ -46,14 +46,12 @@ namespace VinewoodCC
                 try
                 {
                     var stream = new FileStream(fpath, FileMode.Open, FileAccess.Read);
-                    using (var reader = new StreamReader(stream))
+                    using var reader = new StreamReader(stream);
+                    tmpPrev.Add(0);
+                    while (!reader.EndOfStream)
                     {
-                        tmpPrev.Add(0);
-                        while (!reader.EndOfStream)
-                        {
-                            tmpCode.Add(reader.ReadLine());
-                            tmpPrev.Add(tmpPrev[tmpPrev.Count - 1] + 2 + tmpCode[tmpCode.Count - 1].Length);
-                        }
+                        tmpCode.Add(reader.ReadLine());
+                        tmpPrev.Add(tmpPrev[^1] + 2 + tmpCode[^1].Length);
                     }
                 }
                 catch (Exception e)
@@ -71,12 +69,10 @@ namespace VinewoodCC
                 try
                 {
                     var stream = new FileStream(fpath, FileMode.Create, FileAccess.Write);
-                    using (var writer = new StreamWriter(stream))
+                    using var writer = new StreamWriter(stream);
+                    foreach (var l in Tokens)
                     {
-                        foreach (var l in Tokens)
-                        {
-                            writer.WriteLine(l);
-                        }
+                        writer.WriteLine(l);
                     }
                 }
                 catch (Exception e)
@@ -88,17 +84,15 @@ namespace VinewoodCC
                 return 0;
             }
             private void GenToken(int TokenIndex, int StartRow, int EndRow, string Code, string TokenType, int StartLine, int StartRow2)
-            => Tokens.Add(String.Format(TokenTemplate, TokenIndex, StartRow, EndRow, Code, TokenType, StartLine, StartRow2));
+            => Tokens.Add(string.Format(TokenTemplate, TokenIndex, StartRow, EndRow, Code, TokenType, StartLine, StartRow2));
             private void AddEOF(string fpath)
             {
                 string OneLine = "";
                 try
                 {
                     var stream = new FileStream(fpath, FileMode.Open, FileAccess.Read);
-                    using (var reader = new StreamReader(stream))
-                    {
-                        OneLine = reader.ReadToEnd();
-                    }
+                    using var reader = new StreamReader(stream);
+                    OneLine = reader.ReadToEnd();
                 }
                 catch (Exception e)
                 {
@@ -107,22 +101,38 @@ namespace VinewoodCC
                 if (OneLine.Length >= 1)
                 {
                     //current line EOF
-                    if (OneLine[OneLine.Length - 1] != '\n')
+                    if (OneLine[^1] != '\n')
                     {
                         //one line
                         if (SourceCode.Length == 1)
                         {
-                            GenToken(Tokens.Count, PreviousCharacters[1] - 2, PreviousCharacters[1] - 3, "<EOF>", "EOF", SourceCode.Length, SourceCode[0].Length);
+                            GenToken(Tokens.Count,
+                                PreviousCharacters[1] - 2,
+                                PreviousCharacters[1] - 3,
+                                "<EOF>", "EOF",
+                                SourceCode.Length,
+                                SourceCode[0].Length);
                         }
                         //multi-line
                         else
                         {
-                            GenToken(Tokens.Count, PreviousCharacters[PreviousCharacters.Length - 1] - 2, PreviousCharacters[PreviousCharacters.Length - 1] - 3, "<EOF>", "EOF", SourceCode.Length, SourceCode[SourceCode.Length - 1].Length);
+                            GenToken(Tokens.Count,
+                                PreviousCharacters[^1] - 2,
+                                PreviousCharacters[^1] - 3,
+                                "<EOF>", "EOF",
+                                SourceCode.Length,
+                                SourceCode[^1].Length);
                         }
                         return;
                     }
                     //next line EOF
-                    GenToken(Tokens.Count, PreviousCharacters[PreviousCharacters.Length - 1] + 1, PreviousCharacters[PreviousCharacters.Length - 1], "<EOF>", "EOF", SourceCode.Length + 1, 0);
+                    GenToken(Tokens.Count,
+                        PreviousCharacters[^1] + 1,
+                        PreviousCharacters[^1],
+                        "<EOF>",
+                        "EOF",
+                        SourceCode.Length + 1,
+                        0);
                 }
             }
             private int ProcessLine(int lindex)
@@ -137,7 +147,7 @@ namespace VinewoodCC
                         continue;
                     }
                     //Operators
-                    var match = RxOperators.Match(line.Substring(Offset));
+                    var match = RxOperators.Match(line[Offset..]);
                     if (match.Success)
                     {
                         GenToken(Tokens.Count, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, $"'{match.Value}'", lindex + 1, Offset);
@@ -145,7 +155,7 @@ namespace VinewoodCC
                         continue;
                     }
                     //String
-                    match = RxString.Match(line.Substring(Offset));
+                    match = RxString.Match(line[Offset..]);
                     if (match.Success)// && match.Index == Offset
                     {
                         GenToken(Tokens.Count, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "StringLiteral", lindex + 1, Offset);
@@ -153,7 +163,7 @@ namespace VinewoodCC
                         continue;
                     }
                     //Char
-                    match = RxChar.Match(line.Substring(Offset));
+                    match = RxChar.Match(line[Offset..]);
                     if (match.Success)
                     {
                         GenToken(Tokens.Count, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "CharacterConstant", lindex + 1, Offset);
@@ -161,7 +171,7 @@ namespace VinewoodCC
                         continue;
                     }
                     //FloatingConstant
-                    match = RxFloat.Match(line.Substring(Offset));
+                    match = RxFloat.Match(line[Offset..]);
                     if (match.Success)// && match.Index == Offset
                     {
                         GenToken(Tokens.Count, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "FloatingConstant", lindex + 1, Offset);
@@ -169,7 +179,7 @@ namespace VinewoodCC
                         continue;
                     }
                     //IntegerConstant
-                    match = RxInteger.Match(line.Substring(Offset));
+                    match = RxInteger.Match(line[Offset..]);
                     if (match.Success)// && match.Index == Offset
                     {
                         GenToken(Tokens.Count, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "IntegerConstant", lindex + 1, Offset);
@@ -177,10 +187,10 @@ namespace VinewoodCC
                         continue;
                     }
                     //Keywords
-                    match = RxKeywords.Match(line.Substring(Offset));
+                    match = RxKeywords.Match(line[Offset..]);
                     if (Offset + match.Value.Length >= line.Length
-                    || (!Char.IsLetterOrDigit(line[Offset + match.Value.Length])
-                    && line[Offset + match.Value.Length] != '_'))
+                    || !char.IsLetterOrDigit(line[Offset + match.Value.Length])
+                    && line[Offset + match.Value.Length] != '_')
                     {
                         if (match.Success)
                         {
@@ -190,7 +200,7 @@ namespace VinewoodCC
                         }
                     }
                     //Identifier
-                    match = RxIdentifier.Match(line.Substring(Offset));
+                    match = RxIdentifier.Match(line[Offset..]);
                     if (match.Success)
                     {
                         GenToken(Tokens.Count, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "Identifier", lindex + 1, Offset);
@@ -229,7 +239,7 @@ namespace VinewoodCC
                 {
                     foreach (var t in TokensP[i])
                     {
-                        Tokens.Add(String.Format(TokenTemplatePPrefix, Tokens.Count) + t);
+                        Tokens.Add(string.Format(TokenTemplatePPrefix, Tokens.Count) + t);
                     }
                 }
             }
@@ -252,63 +262,63 @@ namespace VinewoodCC
                             continue;
                         }
                         //Operators
-                        var match = RxOperators.Match(line.Substring(Offset));
+                        var match = RxOperators.Match(line[Offset..]);
                         if (match.Success)
                         {
-                            TokensP[workerid].Add(String.Format(TokenTemplateP, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, $"'{match.Value}'", lindex + 1, Offset));
+                            TokensP[workerid].Add(string.Format(TokenTemplateP, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, $"'{match.Value}'", lindex + 1, Offset));
                             Offset += match.Value.Length;
                             continue;
                         }
                         //String
-                        match = RxString.Match(line.Substring(Offset));
+                        match = RxString.Match(line[Offset..]);
                         if (match.Success)// && match.Index == Offset
                         {
-                            TokensP[workerid].Add(String.Format(TokenTemplateP, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "StringLiteral", lindex + 1, Offset));
+                            TokensP[workerid].Add(string.Format(TokenTemplateP, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "StringLiteral", lindex + 1, Offset));
                             Offset += match.Value.Length;
                             continue;
                         }
                         //Char
-                        match = RxChar.Match(line.Substring(Offset));
+                        match = RxChar.Match(line[Offset..]);
                         if (match.Success)
                         {
-                            TokensP[workerid].Add(String.Format(TokenTemplateP, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "CharacterConstant", lindex + 1, Offset));
+                            TokensP[workerid].Add(string.Format(TokenTemplateP, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "CharacterConstant", lindex + 1, Offset));
                             Offset += match.Value.Length;
                             continue;
                         }
                         //FloatingConstant
-                        match = RxFloat.Match(line.Substring(Offset));
+                        match = RxFloat.Match(line[Offset..]);
                         if (match.Success)// && match.Index == Offset
                         {
-                            TokensP[workerid].Add(String.Format(TokenTemplateP, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "FloatingConstant", lindex + 1, Offset));
+                            TokensP[workerid].Add(string.Format(TokenTemplateP, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "FloatingConstant", lindex + 1, Offset));
                             Offset += match.Value.Length;
                             continue;
                         }
                         //IntegerConstant
-                        match = RxInteger.Match(line.Substring(Offset));
+                        match = RxInteger.Match(line[Offset..]);
                         if (match.Success)// && match.Index == Offset
                         {
-                            TokensP[workerid].Add(String.Format(TokenTemplateP, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "IntegerConstant", lindex + 1, Offset));
+                            TokensP[workerid].Add(string.Format(TokenTemplateP, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "IntegerConstant", lindex + 1, Offset));
                             Offset += match.Value.Length;
                             continue;
                         }
                         //Keywords
-                        match = RxKeywords.Match(line.Substring(Offset));
+                        match = RxKeywords.Match(line[Offset..]);
                         if (Offset + match.Value.Length >= line.Length
-                        || (!Char.IsLetterOrDigit(line[Offset + match.Value.Length])
-                        && line[Offset + match.Value.Length] != '_'))
+                        || !char.IsLetterOrDigit(line[Offset + match.Value.Length])
+                        && line[Offset + match.Value.Length] != '_')
                         {
                             if (match.Success)
                             {
-                                TokensP[workerid].Add(String.Format(TokenTemplateP, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, $"'{match.Value}'", lindex + 1, Offset));
+                                TokensP[workerid].Add(string.Format(TokenTemplateP, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, $"'{match.Value}'", lindex + 1, Offset));
                                 Offset += match.Value.Length;
                                 continue;
                             }
                         }
                         //Identifier
-                        match = RxIdentifier.Match(line.Substring(Offset));
+                        match = RxIdentifier.Match(line[Offset..]);
                         if (match.Success)
                         {
-                            TokensP[workerid].Add(String.Format(TokenTemplateP, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "Identifier", lindex + 1, Offset));
+                            TokensP[workerid].Add(string.Format(TokenTemplateP, PreviousCharacters[lindex] + Offset, PreviousCharacters[lindex] + Offset + match.Value.Length - 1, match.Value, "Identifier", lindex + 1, Offset));
                             Offset += match.Value.Length;
                             continue;
                         }
@@ -320,10 +330,10 @@ namespace VinewoodCC
             public void Run(string arg)
             {
                 //test.Run();
-                var start = System.DateTime.Now;
+                var start = DateTime.Now;
                 Console.WriteLine($"Reading \"{arg}\"...");
                 if (ReadCodeFile(arg) != 0) return;
-                OutputFile = arg.Substring(0, arg.LastIndexOf('.')) + ".tokens";
+                OutputFile = string.Concat(arg.AsSpan(0, arg.LastIndexOf('.')), ".tokens");
                 Console.WriteLine("Generating tokens...");
                 //ProcessLineP();
                 for (int i = 0; i < SourceCode.Length; ++i)
@@ -334,13 +344,13 @@ namespace VinewoodCC
                 Console.WriteLine($"{Tokens.Count} tokens generated.");
                 Console.WriteLine($"Writing to \"{OutputFile}\"...");
                 WriteTokens(OutputFile);
-                var end = System.DateTime.Now;
+                var end = DateTime.Now;
                 Console.WriteLine($"Done in {(end - start).TotalMilliseconds}ms.");
             }
             public void Run2(string arg)
             {
                 if (ReadCodeFile(arg) != 0) return;
-                OutputFile = arg.Substring(0, arg.LastIndexOf('.')) + ".tokens";
+                OutputFile = string.Concat(arg.AsSpan(0, arg.LastIndexOf('.')), ".tokens");
                 Console.WriteLine("Generating tokens...");
                 for (int i = 0; i < SourceCode.Length; ++i)
                 {
@@ -350,6 +360,21 @@ namespace VinewoodCC
                 Console.WriteLine($"{Tokens.Count} tokens generated.");
                 WriteTokens(OutputFile);
             }
+
+            [GeneratedRegex("\\A(0[xX][\\dA-Fa-f]+(\\.[\\dA-Fa-f]+)?[pP][\\+\\-]?\\d+[flFL]?|\\d*(\\.\\d*([eE][\\+\\-]?\\d+)?|[eE][\\+\\-]?\\d+)[flFL]?)", RegexOptions.Compiled)]
+            private static partial Regex _RxFloat();
+            [GeneratedRegex("\\A((((0x|0X)[\\dA-Fa-f]+)|\\d+|(0[0-7]+))(llu|ull|LLU|ULL|LU|lu|ul|UL|ll|LL|[ulUL])?)", RegexOptions.Compiled)]
+            private static partial Regex _RxInteger();
+            [GeneratedRegex("\\A([uUL]?'(\\\\U[\\dA-Fa-f]{8}|\\\\u[\\dA-Fa-f]{4}|\\\\x[\\dA-Fa-f]{1,2}|\\\\0?[0-7]{1,2}|\\\\\"|\\\\'|\\\\\\?|\\\\\\\\|\\\\a|\\\\b|\\\\f|\\\\n|\\\\r|\\\\t|\\\\v\\\\\\n|[^'\\\\])')", RegexOptions.Compiled)]
+            private static partial Regex _RxChar();
+            [GeneratedRegex("\\A([_a-zA-Z](_|\\w)*)", RegexOptions.Compiled)]
+            private static partial Regex _RxIdentifier();
+            [GeneratedRegex("\\A(auto|break|case|char|const|continue|default|double|do|else|enum|extern|float|for|goto|if|inline|int|long|register|restrict|return|short|signed|sizeof||struct|switch|typedef|union|unsigned|void|volatile|while)", RegexOptions.Compiled)]
+            private static partial Regex _RxKeywords();
+            [GeneratedRegex("\\A(%:%:|%:|\\#\\#|<:|:>|<%|%>|(<<|>>|&|\\*|/|%|\\+|-|!|=|\\||\\^|>|<)=|&&|\\|\\||\\.\\.\\.|--|<<|>>|\\+\\+|->|[&/~!%<>:;=,\\-\\*\\+\\[\\]\\(\\)\\{\\}\\.\\^\\|\\?\\#])", RegexOptions.Compiled)]
+            private static partial Regex _RxOperators();
+            [GeneratedRegex("\\A((u8|u|U|L)?\"(\\\\U[\\dA-Fa-f]{8}|\\\\u[\\dA-Fa-f]{4}|\\\\x[\\dA-Fa-f]{1,2}|\\\\0?[0-7]{1,2}|\\\\\"|\\\\'|\\\\\\?|\\\\\\\\|\\\\a|\\\\b|\\\\f|\\\\n|\\\\r|\\\\t|\\\\v|[^\\\\\"])*\")", RegexOptions.Compiled)]
+            private static partial Regex _RxString();
         }
     }
 

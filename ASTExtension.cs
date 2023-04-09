@@ -162,7 +162,7 @@ namespace VinewoodCC
                             var newvar = ILProgram.Last().LValue;
                             if (i.Expressions[0] is ASTConstant cst)
                             {
-                                ILProgram.Last().InjectConstant(i.Expressions[0] as ASTConstant, 0);
+                                ILProgram.Last().InjectConstant(cst, 0);
                             }
                             else
                             {
@@ -237,16 +237,16 @@ namespace VinewoodCC
             {
                 var id = (ArrayName as ASTIdentifier).Value;
                 //local array
-                if (LST is not null && LST.ContainsKey(id))
+                if (LST is not null && LST.TryGetValue(id, out STItem value))
                 {
-                    VType = (LST[id] as STArrayItem).ValueType;
+                    VType = (value as STArrayItem).ValueType;
                 }
                 else
                 {
                     //global array
-                    if (GST.ContainsKey(id))
+                    if (GST.TryGetValue(id, out STItem value2))
                     {
-                        VType = (GST[id] as STArrayItem).ValueType;
+                        VType = (value2 as STArrayItem).ValueType;
                     }
                     //not defined
                     else
@@ -254,10 +254,10 @@ namespace VinewoodCC
                         bool defined = false;
                         foreach (var i in earg.Loops)
                         {
-                            if (i.LPT.ContainsKey(id))
+                            if (i.LPT.TryGetValue(id, out STItem value3))
                             {
                                 defined = true;
-                                VType = (i.LPT[id] as STArrayItem).ValueType;
+                                VType = (value3 as STArrayItem).ValueType;
                                 break;
                             }
                         }
@@ -352,7 +352,7 @@ namespace VinewoodCC
                     {
                         expr.RValueB = new ILIdentifier(id.Value, ILNameType.Var, null);
                     }
-                    else if (Expr1 is ASTArrayAccess aa)
+                    else if (Expr1 is ASTArrayAccess)
                     {
                         Expr1.ILGenerate(ILProgram, null);
                         expr.RValueB = ILProgram.Last().LValue;
@@ -403,7 +403,7 @@ namespace VinewoodCC
                         expr.Operator = ILOperator.Assign;
                         expr.LValue = new ILIdentifier(id.Value, ILNameType.Var, null);
                     }
-                    else if (Expr1 is ASTArrayAccess aa)
+                    else if (Expr1 is ASTArrayAccess)
                     {
                         Expr1.ILGenerate(ILProgram, null);
                         ILProgram.Last().Operator = ILOperator.LoadAddress;
@@ -475,7 +475,7 @@ namespace VinewoodCC
                     {
                         expr.RValueA = new ILIdentifier(id.Value, ILNameType.Var, null);
                     }
-                    else if (Expr1 is ASTArrayAccess aa)
+                    else if (Expr1 is ASTArrayAccess)
                     {
                         Expr1.ILGenerate(ILProgram, null);
                         expr.RValueA = ILProgram.Last().LValue;
@@ -798,10 +798,7 @@ namespace VinewoodCC
                     new ILIdentifier("@Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
                 ++ILGenerator.TmpCounter;
                 ILGenerator.LoopContinueStack.Push(jmpStep);
-                if (Initilize is not null)
-                {
-                    Initilize.ILGenerate(ILProgram, "loop");
-                }
+                Initilize?.ILGenerate(ILProgram, "loop");
                 ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpCond.LValue));
                 ILProgram.Add(jmpStep);
                 if (Step is not null)
@@ -868,10 +865,7 @@ namespace VinewoodCC
                     new ILIdentifier("@Cond" + ILGenerator.TmpCounter.ToString(), ILNameType.TmpVar, null));
                 ++ILGenerator.TmpCounter;
                 ILGenerator.LoopContinueStack.Push(jmpStep);
-                if (Initilize is not null)
-                {
-                    Initilize[0].ILGenerate(ILProgram, "loop");
-                }
+                Initilize?[0].ILGenerate(ILProgram, "loop");
                 ILProgram.Add(new QuadTuple(ILOperator.Jmp, null, null, jmpCond.LValue));
                 ILProgram.Add(jmpStep);
                 if (Step is not null)

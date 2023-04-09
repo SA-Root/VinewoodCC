@@ -20,7 +20,7 @@ namespace VinewoodCC
             }
             public static void InjectConstant(this QuadTuple qt, ASTConstant constant, int isRValue, ILIdentifier str = null)
             {
-                if (constant is ASTStringConstant sc)
+                if (constant is ASTStringConstant)
                 {
                     if (isRValue == 0)
                     {
@@ -82,7 +82,7 @@ namespace VinewoodCC
                 }
             }
             public static QuadTuple Last(this List<QuadTuple> ILProgram)
-            => ILProgram[ILProgram.Count - 1];
+            => ILProgram[^1];
             public static void PrintToConsole(this QuadTuple i)
             {
                 Console.Write("({0},", i.Operator);
@@ -105,18 +105,16 @@ namespace VinewoodCC
                 try
                 {
                     var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
-                    using (var writer = new StreamWriter(stream))
+                    using var writer = new StreamWriter(stream);
+                    foreach (var i in ILProgram)
                     {
-                        foreach (var i in ILProgram)
-                        {
-                            writer.Write("({0},", i.Operator);
-                            if (i.RValueA is not null) writer.Write(i.RValueA.ID);
-                            writer.Write(",");
-                            if (i.RValueB is not null) writer.Write(i.RValueB.ID);
-                            writer.Write(",");
-                            if (i.LValue is not null) writer.Write(i.LValue.ID);
-                            writer.Write(")\n");
-                        }
+                        writer.Write("({0},", i.Operator);
+                        if (i.RValueA is not null) writer.Write(i.RValueA.ID);
+                        writer.Write(",");
+                        if (i.RValueB is not null) writer.Write(i.RValueB.ID);
+                        writer.Write(",");
+                        if (i.LValue is not null) writer.Write(i.LValue.ID);
+                        writer.Write(")\n");
                     }
                 }
                 catch (Exception e)
@@ -130,11 +128,9 @@ namespace VinewoodCC
                 try
                 {
                     var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
-                    using (var writer = new StreamWriter(stream))
-                    {
-                        var jsonIR = JsonConvert.SerializeObject(ILProgram, Formatting.Indented);
-                        writer.Write(jsonIR);
-                    }
+                    using var writer = new StreamWriter(stream);
+                    var jsonIR = JsonConvert.SerializeObject(ILProgram, Formatting.Indented);
+                    writer.Write(jsonIR);
                 }
                 catch (Exception e)
                 {
