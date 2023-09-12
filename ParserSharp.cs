@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text.Json;
 using VinewoodCC.AST;
 
 namespace VinewoodCC
@@ -68,7 +68,7 @@ namespace VinewoodCC
                 Root = Program();
                 // Console.WriteLine("Generating JSON file...");
                 OutputFile = string.Concat(path.AsSpan(0, path.LastIndexOf(".tokens")), ".ast.json");
-                var jsonString = JsonConvert.SerializeObject(Root, Formatting.Indented);
+                var jsonString = JsonSerializer.Serialize(Root, SourceGenerationContext.Default.ASTNode);
                 // Console.WriteLine($"Writing to \"{OutputFile}\"...");
                 try
                 {

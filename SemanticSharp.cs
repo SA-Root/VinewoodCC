@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using Newtonsoft.Json;
+using System.Text.Json;
 using VinewoodCC.AST;
 
 namespace VinewoodCC
@@ -18,7 +18,7 @@ namespace VinewoodCC
                     var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
                     using var reader = new StreamReader(stream);
                     var jsonAST = reader.ReadToEnd();
-                    Root = JsonConvert.DeserializeObject<ASTNode>(jsonAST);
+                    Root = JsonSerializer.Deserialize<ASTNode>(jsonAST,SourceGenerationContext.Default.ASTNode);
                 }
                 catch (Exception e)
                 {

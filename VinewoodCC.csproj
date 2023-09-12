@@ -5,7 +5,7 @@
     <TargetFramework>net7.0</TargetFramework>
     <!-- <DebugType>portable</DebugType> -->
     <RuntimeIdentifier>win10-arm64</RuntimeIdentifier>
-    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishAot>true</PublishAot>
     
     <!-- <PublishTrimmed>true</PublishTrimmed> -->
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -18,7 +18,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- <PackageReference Include="BenchmarkDotNet" Version="0.13.5" /> -->
-    <PackageReference Include="JsonSubTypes" Version="2.0.1" />
-     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- <PackageReference Include="JsonSubTypes" Version="2.0.1" />
+     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" /> -->
   </ItemGroup>
 </Project>

@@ -1,54 +1,57 @@
-using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
-using JsonSubTypes;
 using VinewoodCC.Semantic;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace VinewoodCC
 {
     namespace AST
     {
-        [JsonConverter(typeof(JsonSubtypes), "type")]
-        [JsonSubtypes.KnownSubType(typeof(ASTCompilationUnit), "Program")]
-        [JsonSubtypes.KnownSubType(typeof(ASTFunctionDefine), "FunctionDefine")]
-        [JsonSubtypes.KnownSubType(typeof(ASTDeclaration), "Declaration")]
-        [JsonSubtypes.KnownSubType(typeof(ASTToken), "Token")]
-        [JsonSubtypes.KnownSubType(typeof(ASTTypename), "Typename")]
-        [JsonSubtypes.KnownSubType(typeof(ASTParamsDeclarator), "ParamsDeclarator")]
-        [JsonSubtypes.KnownSubType(typeof(ASTInitList), "InitList")]
-        [JsonSubtypes.KnownSubType(typeof(ASTIdentifier), "Identifier")]
-        [JsonSubtypes.KnownSubType(typeof(ASTArrayAccess), "ArrayAccess")]
-        [JsonSubtypes.KnownSubType(typeof(ASTBinaryExpression), "BinaryExpression")]
-        [JsonSubtypes.KnownSubType(typeof(ASTFunctionCall), "FunctionCall")]
-        [JsonSubtypes.KnownSubType(typeof(ASTPostfixExpression), "PostfixExpression")]
-        [JsonSubtypes.KnownSubType(typeof(ASTUnaryExpression), "UnaryExpression")]
-        [JsonSubtypes.KnownSubType(typeof(ASTCharConstant), "CharConstant")]
-        [JsonSubtypes.KnownSubType(typeof(ASTFloatConstant), "FloatConstant")]
-        [JsonSubtypes.KnownSubType(typeof(ASTStringConstant), "StringConstant")]
-        [JsonSubtypes.KnownSubType(typeof(ASTIntegerConstant), "IntegerConstant")]
-        [JsonSubtypes.KnownSubType(typeof(ASTBreakStatement), "BreakStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTCompoundStatement), "CompoundStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTContinueStatement), "ContinueStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTExpressionStatement), "ExpressionStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTIterationDeclaredStatement), "IterationDeclaredStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTIterationStatement), "IterationStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTReturnStatement), "ReturnStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTSelectionStatement), "SelectionStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTArrayDeclarator), "ArrayDeclarator")]
-        [JsonSubtypes.KnownSubType(typeof(ASTVariableDeclarator), "VariableDeclarator")]
-        [JsonSubtypes.KnownSubType(typeof(ASTFunctionDeclarator), "FunctionDeclarator")]
+        [JsonDerivedType(typeof(ASTCompilationUnit), "Program")]
+        [JsonDerivedType(typeof(ASTFunctionDefine), "FunctionDefine")]
+        [JsonDerivedType(typeof(ASTDeclaration), "Declaration")]
+        [JsonDerivedType(typeof(ASTToken), "Token")]
+        [JsonDerivedType(typeof(ASTTypename), "Typename")]
+        [JsonDerivedType(typeof(ASTParamsDeclarator), "ParamsDeclarator")]
+        [JsonDerivedType(typeof(ASTInitList), "InitList")]
+        [JsonDerivedType(typeof(ASTIdentifier), "Identifier")]
+        [JsonDerivedType(typeof(ASTArrayAccess), "ArrayAccess")]
+        [JsonDerivedType(typeof(ASTBinaryExpression), "BinaryExpression")]
+        [JsonDerivedType(typeof(ASTFunctionCall), "FunctionCall")]
+        [JsonDerivedType(typeof(ASTPostfixExpression), "PostfixExpression")]
+        [JsonDerivedType(typeof(ASTUnaryExpression), "UnaryExpression")]
+        [JsonDerivedType(typeof(ASTCharConstant), "CharConstant")]
+        [JsonDerivedType(typeof(ASTFloatConstant), "FloatConstant")]
+        [JsonDerivedType(typeof(ASTStringConstant), "StringConstant")]
+        [JsonDerivedType(typeof(ASTIntegerConstant), "IntegerConstant")]
+        [JsonDerivedType(typeof(ASTBreakStatement), "BreakStatement")]
+        [JsonDerivedType(typeof(ASTCompoundStatement), "CompoundStatement")]
+        [JsonDerivedType(typeof(ASTContinueStatement), "ContinueStatement")]
+        [JsonDerivedType(typeof(ASTExpressionStatement), "ExpressionStatement")]
+        [JsonDerivedType(typeof(ASTIterationDeclaredStatement), "IterationDeclaredStatement")]
+        [JsonDerivedType(typeof(ASTIterationStatement), "IterationStatement")]
+        [JsonDerivedType(typeof(ASTReturnStatement), "ReturnStatement")]
+        [JsonDerivedType(typeof(ASTSelectionStatement), "SelectionStatement")]
+        [JsonDerivedType(typeof(ASTArrayDeclarator), "ArrayDeclarator")]
+        [JsonDerivedType(typeof(ASTVariableDeclarator), "VariableDeclarator")]
+        [JsonDerivedType(typeof(ASTFunctionDeclarator), "FunctionDeclarator")]
         public partial class ASTNode
         {
-            [JsonProperty(Order = 1, PropertyName = "type")]
             public string Type { get; set; }
             public ASTNode(string type)
             {
                 Type = type;
             }
         }
+
+        [JsonSourceGenerationOptions(WriteIndented = true)]
+        [JsonSerializable(typeof(ASTNode))]
+        internal partial class SourceGenerationContext : JsonSerializerContext
+        {
+        }
+
         public partial class ASTCompilationUnit : ASTNode
         {
-            [JsonProperty(Order = 2, PropertyName = "items")]
             public List<ASTNode> Items { get; set; }
             [JsonIgnore]
             public Dictionary<string, STItem> GlobalSymbolTable { get; set; }
@@ -61,17 +64,16 @@ namespace VinewoodCC
                 Items = items;
             }
         }
-        [JsonConverter(typeof(JsonSubtypes), "type")]
-        [JsonSubtypes.KnownSubType(typeof(ASTIdentifier), "Identifier")]
-        [JsonSubtypes.KnownSubType(typeof(ASTArrayAccess), "ArrayAccess")]
-        [JsonSubtypes.KnownSubType(typeof(ASTBinaryExpression), "BinaryExpression")]
-        [JsonSubtypes.KnownSubType(typeof(ASTFunctionCall), "FunctionCall")]
-        [JsonSubtypes.KnownSubType(typeof(ASTPostfixExpression), "PostfixExpression")]
-        [JsonSubtypes.KnownSubType(typeof(ASTUnaryExpression), "UnaryExpression")]
-        [JsonSubtypes.KnownSubType(typeof(ASTCharConstant), "CharConstant")]
-        [JsonSubtypes.KnownSubType(typeof(ASTFloatConstant), "FloatConstant")]
-        [JsonSubtypes.KnownSubType(typeof(ASTStringConstant), "StringConstant")]
-        [JsonSubtypes.KnownSubType(typeof(ASTIntegerConstant), "IntegerConstant")]
+        [JsonDerivedType(typeof(ASTIdentifier), "Identifier")]
+        [JsonDerivedType(typeof(ASTArrayAccess), "ArrayAccess")]
+        [JsonDerivedType(typeof(ASTBinaryExpression), "BinaryExpression")]
+        [JsonDerivedType(typeof(ASTFunctionCall), "FunctionCall")]
+        [JsonDerivedType(typeof(ASTPostfixExpression), "PostfixExpression")]
+        [JsonDerivedType(typeof(ASTUnaryExpression), "UnaryExpression")]
+        [JsonDerivedType(typeof(ASTCharConstant), "CharConstant")]
+        [JsonDerivedType(typeof(ASTFloatConstant), "FloatConstant")]
+        [JsonDerivedType(typeof(ASTStringConstant), "StringConstant")]
+        [JsonDerivedType(typeof(ASTIntegerConstant), "IntegerConstant")]
         public abstract partial class ASTExpression : ASTNode
         {
             public ASTExpression(string type) : base(type)
@@ -86,15 +88,14 @@ namespace VinewoodCC
 
             }
         }
-        [JsonConverter(typeof(JsonSubtypes), "type")]
-        [JsonSubtypes.KnownSubType(typeof(ASTBreakStatement), "BreakStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTCompoundStatement), "CompoundStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTContinueStatement), "ContinueStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTExpressionStatement), "ExpressionStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTIterationDeclaredStatement), "IterationDeclaredStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTIterationStatement), "IterationStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTReturnStatement), "ReturnStatement")]
-        [JsonSubtypes.KnownSubType(typeof(ASTSelectionStatement), "SelectionStatement")]
+        [JsonDerivedType(typeof(ASTBreakStatement), "BreakStatement")]
+        [JsonDerivedType(typeof(ASTCompoundStatement), "CompoundStatement")]
+        [JsonDerivedType(typeof(ASTContinueStatement), "ContinueStatement")]
+        [JsonDerivedType(typeof(ASTExpressionStatement), "ExpressionStatement")]
+        [JsonDerivedType(typeof(ASTIterationDeclaredStatement), "IterationDeclaredStatement")]
+        [JsonDerivedType(typeof(ASTIterationStatement), "IterationStatement")]
+        [JsonDerivedType(typeof(ASTReturnStatement), "ReturnStatement")]
+        [JsonDerivedType(typeof(ASTSelectionStatement), "SelectionStatement")]
         public abstract partial class ASTStatement : ASTNode
         {
             public ASTStatement(string type) : base(type)
@@ -104,11 +105,8 @@ namespace VinewoodCC
         }
         public partial class ASTFunctionDefine : ASTNode
         {
-            [JsonProperty(Order = 2, PropertyName = "specifiers")]
             public List<ASTToken> Specifiers { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "declarator")]
             public ASTDeclarator Declarator { get; set; }
-            [JsonProperty(Order = 4, PropertyName = "body")]
             public ASTCompoundStatement Body { get; set; }
             [JsonIgnore]
             private Dictionary<string, STItem> LocalSymbolTable { get; set; }
@@ -125,9 +123,7 @@ namespace VinewoodCC
         }
         public partial class ASTDeclaration : ASTNode
         {
-            [JsonProperty(Order = 2, PropertyName = "specifiers")]
             public List<ASTToken> Specifiers { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "initLists")]
             public List<ASTInitList> InitLists { get; set; }
             public ASTDeclaration() : base("Declaration")
             {
@@ -142,9 +138,7 @@ namespace VinewoodCC
         }
         public partial class ASTToken : ASTNode
         {
-            [JsonProperty(Order = 2, PropertyName = "value")]
             public string Value { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "tokenId")]
             public int TokenID { get; set; }
             public ASTToken() : base("Token")
             {
@@ -158,9 +152,7 @@ namespace VinewoodCC
         }
         public partial class ASTTypename : ASTNode
         {
-            [JsonProperty(Order = 2, PropertyName = "specfiers")]
             public List<ASTToken> Specfiers { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "declarator")]
             public ASTDeclarator Declarator { get; set; }
             public ASTTypename() : base("Typename")
             {
@@ -172,10 +164,9 @@ namespace VinewoodCC
                 Declarator = declarator;
             }
         }
-        [JsonConverter(typeof(JsonSubtypes), "type")]
-        [JsonSubtypes.KnownSubType(typeof(ASTArrayDeclarator), "ArrayDeclarator")]
-        [JsonSubtypes.KnownSubType(typeof(ASTVariableDeclarator), "VariableDeclarator")]
-        [JsonSubtypes.KnownSubType(typeof(ASTFunctionDeclarator), "FunctionDeclarator")]
+        [JsonDerivedType(typeof(ASTArrayDeclarator), "ArrayDeclarator")]
+        [JsonDerivedType(typeof(ASTVariableDeclarator), "VariableDeclarator")]
+        [JsonDerivedType(typeof(ASTFunctionDeclarator), "FunctionDeclarator")]
         abstract public partial class ASTDeclarator : ASTNode
         {
             public ASTDeclarator(string type) : base(type)
@@ -185,9 +176,7 @@ namespace VinewoodCC
         }
         public partial class ASTParamsDeclarator : ASTNode
         {
-            [JsonProperty(Order = 2, PropertyName = "specfiers")]
             public List<ASTToken> Specfiers { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "declarator")]
             public ASTDeclarator Declarator { get; set; }
             public ASTParamsDeclarator() : base("ParamsDeclarator")
             {
@@ -201,9 +190,7 @@ namespace VinewoodCC
         }
         public partial class ASTInitList : ASTNode
         {
-            [JsonProperty(Order = 2, PropertyName = "declarator")]
             public ASTDeclarator Declarator { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "exprs")]
             public List<ASTExpression> Expressions { get; set; }
             public ASTInitList() : base("InitList")
             {
@@ -217,9 +204,7 @@ namespace VinewoodCC
         }
         public partial class ASTIdentifier : ASTExpression
         {
-            [JsonProperty(Order = 2, PropertyName = "value")]
             public string Value { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "tokenId")]
             public int TokenID { get; set; }
             public ASTIdentifier() : base("Identifier")
             {
@@ -233,9 +218,7 @@ namespace VinewoodCC
         }
         public partial class ASTArrayAccess : ASTExpression
         {
-            [JsonProperty(Order = 2, PropertyName = "arrayName")]
             public ASTExpression ArrayName { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "elements")]
             public List<ASTExpression> Elements { get; set; }
             public ASTArrayAccess() : base("ArrayAccess")
             {
@@ -249,11 +232,8 @@ namespace VinewoodCC
         }
         public partial class ASTBinaryExpression : ASTExpression
         {
-            [JsonProperty(Order = 2, PropertyName = "op")]
             public ASTToken Operator { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "expr1")]
             public ASTExpression Expr1 { get; set; }
-            [JsonProperty(Order = 4, PropertyName = "expr2")]
             public ASTExpression Expr2 { get; set; }
             public ASTBinaryExpression() : base("BinaryExpression")
             {
@@ -268,9 +248,7 @@ namespace VinewoodCC
         }
         public partial class ASTCharConstant : ASTConstant
         {
-            [JsonProperty(Order = 2, PropertyName = "value")]
             public string Value { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "tokenId")]
             public int TokenID { get; set; }
             public ASTCharConstant() : base("CharConstant")
             {
@@ -284,9 +262,7 @@ namespace VinewoodCC
         }
         public partial class ASTFloatConstant : ASTConstant
         {
-            [JsonProperty(Order = 2, PropertyName = "value")]
             public double Value { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "tokenId")]
             public int TokenID { get; set; }
             public ASTFloatConstant() : base("FloatConstant")
             {
@@ -300,9 +276,7 @@ namespace VinewoodCC
         }
         public partial class ASTFunctionCall : ASTExpression
         {
-            [JsonProperty(Order = 2, PropertyName = "funcname")]
             public ASTExpression FunctionName { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "argList")]
             public List<ASTNode> ArgList { get; set; }
             public ASTFunctionCall() : base("FunctionCall")
             {
@@ -316,9 +290,7 @@ namespace VinewoodCC
         }
         public partial class ASTIntegerConstant : ASTConstant
         {
-            [JsonProperty(Order = 2, PropertyName = "value")]
             public int Value { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "tokenId")]
             public int TokenID { get; set; }
             public ASTIntegerConstant() : base("IntegerConstant")
             {
@@ -332,9 +304,7 @@ namespace VinewoodCC
         }
         public partial class ASTPostfixExpression : ASTExpression
         {
-            [JsonProperty(Order = 2, PropertyName = "expr")]
             public ASTExpression Expression { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "op")]
             public ASTToken Operator { get; set; }
             public ASTPostfixExpression() : base("PostfixExpression")
             {
@@ -348,9 +318,7 @@ namespace VinewoodCC
         }
         public partial class ASTStringConstant : ASTConstant
         {
-            [JsonProperty(Order = 2, PropertyName = "value")]
             public string Value { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "tokenId")]
             public int TokenID { get; set; }
             public ASTStringConstant() : base("StringConstant")
             {
@@ -364,9 +332,7 @@ namespace VinewoodCC
         }
         public partial class ASTUnaryExpression : ASTExpression
         {
-            [JsonProperty(Order = 2, PropertyName = "op")]
             public ASTToken Operator { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "expr")]
             public ASTExpression Expression { get; set; }
             public ASTUnaryExpression() : base("UnaryExpression")
             {
@@ -387,7 +353,6 @@ namespace VinewoodCC
         }
         public partial class ASTCompoundStatement : ASTStatement
         {
-            [JsonProperty(Order = 2, PropertyName = "blockItems")]
             public List<ASTNode> BlockItems { get; set; }
             public ASTCompoundStatement() : base("CompoundStatement")
             {
@@ -407,7 +372,6 @@ namespace VinewoodCC
         }
         public partial class ASTExpressionStatement : ASTStatement
         {
-            [JsonProperty(Order = 2, PropertyName = "exprs")]
             public List<ASTNode> Expressions { get; set; }
             public ASTExpressionStatement() : base("ExpressionStatement")
             {
@@ -420,13 +384,9 @@ namespace VinewoodCC
         }
         public partial class ASTIterationDeclaredStatement : ASTStatement
         {
-            [JsonProperty(Order = 2, PropertyName = "init")]
             public ASTDeclaration Initilize { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "cond")]
             public List<ASTNode> Condition { get; set; }
-            [JsonProperty(Order = 4, PropertyName = "step")]
             public List<ASTNode> Step { get; set; }
-            [JsonProperty(Order = 5, PropertyName = "stat")]
             public ASTStatement Stat { get; set; }
             public ASTIterationDeclaredStatement() : base("IterationDeclaredStatement")
             {
@@ -445,13 +405,9 @@ namespace VinewoodCC
         }
         public partial class ASTIterationStatement : ASTStatement
         {
-            [JsonProperty(Order = 2, PropertyName = "init")]
             public List<ASTNode> Initilize { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "cond")]
             public List<ASTNode> Condition { get; set; }
-            [JsonProperty(Order = 4, PropertyName = "step")]
             public List<ASTNode> Step { get; set; }
-            [JsonProperty(Order = 5, PropertyName = "stat")]
             public ASTStatement Stat { get; set; }
             public ASTIterationStatement() : base("IterationStatement")
             {
@@ -470,7 +426,6 @@ namespace VinewoodCC
         }
         public partial class ASTReturnStatement : ASTStatement
         {
-            [JsonProperty(Order = 2, PropertyName = "expr")]
             public List<ASTNode> Expression { get; set; }
             public ASTReturnStatement() : base("ReturnStatement")
             {
@@ -483,11 +438,8 @@ namespace VinewoodCC
         }
         public partial class ASTSelectionStatement : ASTStatement
         {
-            [JsonProperty(Order = 2, PropertyName = "cond")]
             public List<ASTNode> Condition { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "then")]
             public ASTStatement Then { get; set; }
-            [JsonProperty(Order = 4, PropertyName = "otherwise")]
             public ASTStatement Otherwise { get; set; }
             public ASTSelectionStatement() : base("SelectionStatement")
             {
@@ -504,9 +456,7 @@ namespace VinewoodCC
         }
         public partial class ASTArrayDeclarator : ASTDeclarator
         {
-            [JsonProperty(Order = 2, PropertyName = "declarator")]
             public ASTDeclarator Declarator { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "expr")]
             public ASTExpression Expression { get; set; }
             public ASTArrayDeclarator() : base("ArrayDeclarator")
             {
@@ -520,7 +470,6 @@ namespace VinewoodCC
         }
         public partial class ASTVariableDeclarator : ASTDeclarator
         {
-            [JsonProperty(Order = 2, PropertyName = "identifier")]
             public ASTIdentifier Identifier { get; set; }
             public ASTVariableDeclarator() : base("VariableDeclarator")
             {
@@ -533,9 +482,7 @@ namespace VinewoodCC
         }
         public partial class ASTFunctionDeclarator : ASTDeclarator
         {
-            [JsonProperty(Order = 2, PropertyName = "declarator")]
             public ASTDeclarator Declarator { get; set; }
-            [JsonProperty(Order = 3, PropertyName = "params")]
             public List<ASTParamsDeclarator> Parameters { get; set; }
             public ASTFunctionDeclarator() : base("FunctionDeclarator")
             {

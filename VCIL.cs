@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using VinewoodCC.AST;
 
 namespace VinewoodCC
@@ -129,7 +130,7 @@ namespace VinewoodCC
                 {
                     var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
                     using var writer = new StreamWriter(stream);
-                    var jsonIR = JsonConvert.SerializeObject(ILProgram, Formatting.Indented);
+                    var jsonIR = JsonSerializer.Serialize(ILProgram, typeof(List<QuadTuple>), SourceGenerationContext2.Default);
                     writer.Write(jsonIR);
                 }
                 catch (Exception e)
@@ -208,6 +209,12 @@ namespace VinewoodCC
                 LValue = lv;
             }
             public QuadTuple() { }
+        }
+
+        [JsonSourceGenerationOptions(WriteIndented = true)]
+        [JsonSerializable(typeof(List<QuadTuple>))]
+        internal partial class SourceGenerationContext2 : JsonSerializerContext
+        {
         }
     }
 }
